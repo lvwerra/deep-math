@@ -4,5 +4,6 @@
  "thinking_steps": 1,
  "epochs": 1,
  "latent_dim": 256,
- "save_path": "/artifacts/"
+ "save_path": "/artifacts/",
+ "data_path": "/storage/git/deep-math/data/raw/v1.0/"
 }
