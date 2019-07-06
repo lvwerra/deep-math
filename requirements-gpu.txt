@@ -1,0 +1,5 @@
+tensorflow-gpu==2.0.0-beta1
+pandas
+gradient-statsd
+scikit-learn
+jupyterlab
