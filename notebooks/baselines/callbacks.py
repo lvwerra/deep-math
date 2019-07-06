@@ -54,7 +54,7 @@ class GradientLogger(Callback):
         if (self.batches%self.live_gaps) == 0:
             for name in self.live_metrics:
                 item = logs[name]
-                self.add_data_to_graph(name, str(self.batches), item)
+                self.add_data_to_graph('live_'+name, str(self.batches), item)
                 
     def on_epoch_end(self, epoch, logs=None):
         epoch_str = str(epoch)
