@@ -111,3 +111,6 @@ data/
 
 # Mac OS X files
 .DS_Store
+
+# Paperspace Gradient files
+deep-math.zip
