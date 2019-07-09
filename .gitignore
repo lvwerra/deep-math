@@ -105,3 +105,12 @@ venv.bak/
 
 data/
 \.ps_project/
+
+# VS Code files
+.vscode/*
+
+# Mac OS X files
+.DS_Store
+
+# Paperspace Gradient files
+deep-math.zip

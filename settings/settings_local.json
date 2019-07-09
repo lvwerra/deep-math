@@ -1,0 +1,10 @@
+{
+    "math_module": "arithmetic",
+    "train_level": "easy",
+    "batch_size": 1024,
+    "thinking_steps": 0,
+    "epochs": 1,
+    "latent_dim": 256,
+    "save_path": "/artifacts/",
+    "data_path": "./data/raw/v1.0/"
+}

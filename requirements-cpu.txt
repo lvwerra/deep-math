@@ -3,3 +3,6 @@ pandas
 gradient-statsd
 scikit-learn
 jupyterlab
+matplotlib
+gradient
+black
