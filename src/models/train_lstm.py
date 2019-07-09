@@ -1,5 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
+
+"""Run a Gradient job as follows:
+    gradient jobs create \
+    --name "lstm_test" \
+    --container tensorflow/tensorflow:2.0.0a0-gpu-py3-jupyter \
+    --machineType GPU+ \
+    --command "/paperspace/run_lstm.sh" \
+    --ignoreFiles "data,env"
+"""
 import os
 import pandas as pd
 import numpy as np
@@ -165,13 +174,22 @@ model.compile(
     optimizer=adam, loss="categorical_crossentropy", metrics=[exact_match_metric]
 )
 
+# directory where the checkpoints will be saved
+checkpoint_dir = settings_dict["save_path"] + "training_checkpoints"
+# name of the checkpoint files
+checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt_{epoch}")
+
+checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+    filepath=checkpoint_prefix, save_weights_only=True
+)
+
 print("Start training...")
 train_hist = model.fit_generator(
     training_generator,
     epochs=epochs,
     use_multiprocessing=True,
     workers=cpu_count,
-    callbacks=[history, gradient],
+    callbacks=[history, gradient, checkpoint_callback],
     verbose=0,
 )
 
