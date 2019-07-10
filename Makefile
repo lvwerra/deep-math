@@ -1,4 +1,4 @@
-.PHONY: gradient_job
+.PHONY: gradient_job data
 
 #################################################################################
 # COMMANDS                                                                      #
@@ -10,3 +10,9 @@ gradient_job:
 	--machineType GPU+ \
 	--command "/paperspace/run_script.sh" \
 	--ignoreFiles "data,env"
+
+data:
+	mkdir -p data/raw/
+	cd data/raw/; gsutil cp gs://mathematics-dataset/mathematics_dataset-v1.0.tar.gz .
+	cd data/raw; tar -xvzf mathematics_dataset-v1.0.tar.gz
+	cd data/raw; rm mathematics_dataset-v1.0.tar.gz
