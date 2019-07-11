@@ -10,11 +10,7 @@
     --ignoreFiles "data,env"
 """
 import os
-import pandas as pd
-import numpy as np
-import logging
 from pathlib import Path
-import glob
 import pickle
 import pprint
 import json
@@ -243,4 +239,3 @@ model.save(settings_dict["save_path"] + "model.h5")
 # save settings
 with open(settings_dict["save_path"] + "settings.json", "w") as file:
     json.dump(settings_dict, file)
-
