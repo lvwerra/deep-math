@@ -35,7 +35,7 @@ cpu_count = multiprocessing.cpu_count()
 print("Number of CPUs:", cpu_count)
 
 # load settings
-settings_path = Path("settings/settings.json")
+settings_path = Path("settings/settings_local.json")
 with open(str(settings_path), "r") as file:
     settings_dict = json.load(file)
 
@@ -46,7 +46,6 @@ pprint.pprint(settings_dict)
 raw_path = Path(settings_dict["data_path"])
 interpolate_path = raw_path / "interpolate"
 extrapolate_path = raw_path / "extrapolate"
-train_easy_path = raw_path / "train-easy/"
 
 # configure module and train level
 math_module = settings_dict["math_module"]
