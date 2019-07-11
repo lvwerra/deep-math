@@ -6,3 +6,4 @@ jupyterlab
 matplotlib
 gradient
 black
+gsutil
