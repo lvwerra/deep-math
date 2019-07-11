@@ -7,3 +7,4 @@ matplotlib
 gradient
 black
 gsutil
+click
