@@ -105,87 +105,87 @@ class LSTM_S2S:
         return decoded_sentence
 
 
-    class LSTM_Simple:
+class LSTM_Simple:
 
-        def __init__(self, num_encoder_tokens, num_decoder_tokens, latent_dim):
-            self.num_encoder_tokens = num_encoder_tokens
-            self.num_decoder_tokens = num_decoder_tokens
-            self.latent_dim = latent_dim
+    def __init__(self, num_encoder_tokens, num_decoder_tokens, latent_dim):
+        self.num_encoder_tokens = num_encoder_tokens
+        self.num_decoder_tokens = num_decoder_tokens
+        self.latent_dim = latent_dim
 
-        def get_model(self):
-            # Define an input sequence and process it.
-            self.lstm_inputs = Input(shape=(None, self.num_encoder_tokens))
-            self.lstm = CuDNNLSTM(self.latent_dim, return_state=True)
-            lstm_outputs, state_h, state_c = self.lstm(self.lstm_inputs)
+    def get_model(self):
+        # Define an input sequence and process it.
+        self.lstm_inputs = Input(shape=(None, self.num_encoder_tokens))
+        self.lstm = CuDNNLSTM(self.latent_dim, return_state=True)
+        lstm_outputs, state_h, state_c = self.lstm(self.lstm_inputs)
 
-            self.lstm_states = [state_h, state_c]
+        self.lstm_states = [state_h, state_c]
 
-            self.dense = Dense(self.num_decoder_tokens, activation='softmax')
-            lstm_outputs = self.decoder_dense(lstm_outputs)
+        self.dense = Dense(self.num_decoder_tokens, activation='softmax')
+        lstm_outputs = self.decoder_dense(lstm_outputs)
 
-            self.model = Model(self.lstm_inputs, lstm_outputs)
+        self.model = Model(self.lstm_inputs, lstm_outputs)
 
-            return self.model
+        return self.model
 
-        def decode_sample(self, input_seq_list, target_token_index, max_sequence_length):
+    def decode_sample(self, input_seq_list, target_token_index, max_sequence_length):
 
-            # reverse the char -> id dictionary for decoding
-            reverse_target_char_index = dict((i, char) for char, i in target_token_index.items())
+        # reverse the char -> id dictionary for decoding
+        reverse_target_char_index = dict((i, char) for char, i in target_token_index.items())
 
-            decoder_state_input_h = Input(shape=(self.latent_dim,))
-            decoder_state_input_c = Input(shape=(self.latent_dim,))
-            decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
-            decoder_outputs, state_h, state_c = self.lstm(self.decoder_inputs, initial_state=decoder_states_inputs)
-            decoder_states = [state_h, state_c]
-            decoder_outputs = self.decoder_dense(decoder_outputs)
+        decoder_state_input_h = Input(shape=(self.latent_dim,))
+        decoder_state_input_c = Input(shape=(self.latent_dim,))
+        decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
+        decoder_outputs, state_h, state_c = self.lstm(self.decoder_inputs, initial_state=decoder_states_inputs)
+        decoder_states = [state_h, state_c]
+        decoder_outputs = self.decoder_dense(decoder_outputs)
 
-            decoder_model = Model([self.lstm_inputs] + decoder_states_inputs, [decoder_outputs] + decoder_states)
+        decoder_model = Model([self.lstm_inputs] + decoder_states_inputs, [decoder_outputs] + decoder_states)
 
 
-            # get the results for each sequence in the list
-            results = []
-            for input_seq in input_seq_list:
-                results.append(self.decode_sequence(input_seq, decoder_model,
-                                                    target_token_index,
-                                                    reverse_target_char_index,
-                                                    max_sequence_length))
-            return results
+        # get the results for each sequence in the list
+        results = []
+        for input_seq in input_seq_list:
+            results.append(self.decode_sequence(input_seq, decoder_model,
+                                                target_token_index,
+                                                reverse_target_char_index,
+                                                max_sequence_length))
+        return results
 
-        def decode_sequence(self, input_seq, decoder_model, target_token_index,
-                            reverse_target_char_index, max_sequence_length):
+    def decode_sequence(self, input_seq, decoder_model, target_token_index,
+                        reverse_target_char_index, max_sequence_length):
 
-            # initial state is zero
-            states_value = [np.zeros((1, self.latent_dim)), np.zeros((1, self.latent_dim))]
+        # initial state is zero
+        states_value = [np.zeros((1, self.latent_dim)), np.zeros((1, self.latent_dim))]
 
-            # feed in the whole input sequence except the last thinking step which output will be used as
-            # input for first relevant output_tokens
-            _, h, c = decoder_model.predict([input_seq[:,:,:-1]] + states_value)
+        # feed in the whole input sequence except the last thinking step which output will be used as
+        # input for first relevant output_tokens
+        _, h, c = decoder_model.predict([input_seq[:,:,:-1]] + states_value)
+        states_value = [h, c]
+        target_seq = input_seq[:,:,-1]
+
+        # Sampling loop for a batch of sequences
+        # (to simplify, here we assume a batch of size 1).
+        stop_condition = False
+        decoded_sentence = ''
+        while not stop_condition:
+            output_tokens, h, c = decoder_model.predict([target_seq] + states_value)
+
+            # Sample a token
+            sampled_token_index = np.argmax(output_tokens[0, -1, :])
+            sampled_char = reverse_target_char_index[sampled_token_index]
+            decoded_sentence += sampled_char
+
+            # Exit condition: either hit max length
+            # or find stop character.
+            if (sampled_char == '\n' or
+                    len(decoded_sentence) > max_sequence_length):
+                stop_condition = True
+
+            # Update the target sequence (of length 1).
+            target_seq = np.zeros((1, 1, len(target_token_index)))
+            target_seq[0, 0, sampled_token_index] = 1.
+
+            # Update states
             states_value = [h, c]
-            target_seq = input_seq[:,:,-1]
 
-            # Sampling loop for a batch of sequences
-            # (to simplify, here we assume a batch of size 1).
-            stop_condition = False
-            decoded_sentence = ''
-            while not stop_condition:
-                output_tokens, h, c = decoder_model.predict([target_seq] + states_value)
-
-                # Sample a token
-                sampled_token_index = np.argmax(output_tokens[0, -1, :])
-                sampled_char = reverse_target_char_index[sampled_token_index]
-                decoded_sentence += sampled_char
-
-                # Exit condition: either hit max length
-                # or find stop character.
-                if (sampled_char == '\n' or
-                        len(decoded_sentence) > max_sequence_length):
-                    stop_condition = True
-
-                # Update the target sequence (of length 1).
-                target_seq = np.zeros((1, 1, len(target_token_index)))
-                target_seq[0, 0, sampled_token_index] = 1.
-
-                # Update states
-                states_value = [h, c]
-
-            return decoded_sentence
+        return decoded_sentence
