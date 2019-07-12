@@ -107,21 +107,20 @@ class LSTM_S2S:
 
 class LSTM_Simple:
 
-    def __init__(self, num_encoder_tokens, num_decoder_tokens, latent_dim):
-        self.num_encoder_tokens = num_encoder_tokens
-        self.num_decoder_tokens = num_decoder_tokens
+    def __init__(self, num_tokens, latent_dim):
+        self.num_tokens = num_tokens
         self.latent_dim = latent_dim
 
     def get_model(self):
         # Define an input sequence and process it.
-        self.lstm_inputs = Input(shape=(None, self.num_encoder_tokens))
-        self.lstm = CuDNNLSTM(self.latent_dim, return_state=True)
+        self.lstm_inputs = Input(shape=(None, self.num_tokens))
+        self.lstm = CuDNNLSTM(self.latent_dim, return_state=True, return_sequences=True)
         lstm_outputs, state_h, state_c = self.lstm(self.lstm_inputs)
 
         self.lstm_states = [state_h, state_c]
 
-        self.dense = Dense(self.num_decoder_tokens, activation='softmax')
-        lstm_outputs = self.decoder_dense(lstm_outputs)
+        self.dense = Dense(self.num_tokens, activation='softmax')
+        lstm_outputs = self.dense(lstm_outputs)
 
         self.model = Model(self.lstm_inputs, lstm_outputs)
 
@@ -137,7 +136,7 @@ class LSTM_Simple:
         decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
         decoder_outputs, state_h, state_c = self.lstm(self.decoder_inputs, initial_state=decoder_states_inputs)
         decoder_states = [state_h, state_c]
-        decoder_outputs = self.decoder_dense(decoder_outputs)
+        decoder_outputs = self.dense(decoder_outputs)
 
         decoder_model = Model([self.lstm_inputs] + decoder_states_inputs, [decoder_outputs] + decoder_states)
 

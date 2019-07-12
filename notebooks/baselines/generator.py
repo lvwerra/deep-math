@@ -70,15 +70,14 @@ class DataGenerator(tf.keras.utils.Sequence):
 
 class DataGeneratorSeq(tf.keras.utils.Sequence):
     def __init__(self, batch_size, input_texts, target_texts,
-                 max_input_seq_length, max_output_seq_length,
+                 max_seq_length,
                  num_tokens, token_index,
                  num_thinking_steps, shuffle=True):
 
         self.batch_size = batch_size
         self.input_texts = input_texts
         self.target_texts = target_texts
-        self.max_input_seq_length = max_input_seq_length
-        self.max_output_seq_length = max_output_seq_length
+        self.max_seq_length = max_seq_length
         self.num_tokens = num_tokens
         self.token_index = token_index
         self.indexes = list(range(len(self.input_texts)))
@@ -105,7 +104,7 @@ class DataGeneratorSeq(tf.keras.utils.Sequence):
     def __data_generation(self, indexes):
         'Generates data containing batch_size samples'
 
-        total_seq_length = self.max_input_seq_length + self.num_thinking_steps + self.max_output_seq_length
+        total_seq_length = self.max_seq_length + self.num_thinking_steps
 
         input_data = np.zeros((self.batch_size, total_seq_length, self.num_tokens), dtype='float32')
         output_data = np.zeros((self.batch_size, total_seq_length, self.num_tokens), dtype='float32')
@@ -125,6 +124,6 @@ class DataGeneratorSeq(tf.keras.utils.Sequence):
                 if t > 0:
                     # decoder_target_data will be ahead by one timestep
                     # and will not include the start character.
-                    output_data[i, target_offset + t + self.num_thinking_steps - 1, self.target_token_index[char]] = 1.
+                    output_data[i, target_offset + t + self.num_thinking_steps - 1, self.token_index[char]] = 1.
 
         return (input_data, output_data)
