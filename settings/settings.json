@@ -1,9 +1,9 @@
 {"math_module": "arithmetic",
  "train_level": "easy",
  "batch_size": 1024,
- "thinking_steps": 1,
+ "thinking_steps": 16,
  "epochs": 1,
- "latent_dim": 256,
+ "latent_dim": 2048,
  "save_path": "/artifacts/",
  "data_path": "/storage/git/deep-math/data/raw/v1.0/"
 }
