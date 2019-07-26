@@ -134,7 +134,7 @@ class LSTM_Simple:
         decoder_state_input_h = Input(shape=(self.latent_dim,))
         decoder_state_input_c = Input(shape=(self.latent_dim,))
         decoder_states_inputs = [decoder_state_input_h, decoder_state_input_c]
-        decoder_outputs, state_h, state_c = self.lstm(self.decoder_inputs, initial_state=decoder_states_inputs)
+        decoder_outputs, state_h, state_c = self.lstm(self.lstm_inputs, initial_state=decoder_states_inputs)
         decoder_states = [state_h, state_c]
         decoder_outputs = self.dense(decoder_outputs)
 
@@ -158,9 +158,9 @@ class LSTM_Simple:
 
         # feed in the whole input sequence except the last thinking step which output will be used as
         # input for first relevant output_tokens
-        _, h, c = decoder_model.predict([input_seq[:,:,:-1]] + states_value)
+        _, h, c = decoder_model.predict([input_seq[:,:-1,:]] + states_value)
         states_value = [h, c]
-        target_seq = input_seq[:,:,-1]
+        target_seq = input_seq[:,-1:,:]
 
         # Sampling loop for a batch of sequences
         # (to simplify, here we assume a batch of size 1).
