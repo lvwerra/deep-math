@@ -116,11 +116,10 @@ class DataGeneratorSeq(tf.keras.utils.Sequence):
 
             for t, char in enumerate(input_text):
                 input_data[i, t, self.token_index[char]] = 1.
-
             target_offset = len(input_text)
             for t, char in enumerate(target_text):
                 # decoder_target_data is ahead of decoder_input_data by one timestep
-                input_data[i, target_offset+ t + self.num_thinking_steps, self.token_index[char]] = 1.
+                input_data[i, target_offset + t + self.num_thinking_steps, self.token_index[char]] = 1.
                 if t > 0:
                     # decoder_target_data will be ahead by one timestep
                     # and will not include the start character.
