@@ -3,7 +3,7 @@
 
 """Run a Gradient job as follows:
     gradient jobs create \
-    --name "lstm_test" \
+    --name "lstm_attention_v0.1" \
     --container tensorflow/tensorflow:2.0.0a0-gpu-py3-jupyter \
     --machineType GPU+ \
     --command "/paperspace/run_script.sh" \
@@ -16,15 +16,15 @@ import pprint
 import json
 import click
 import matplotlib.pyplot as plt
-from lstm import LSTM_S2S
-from metrics import exact_match_metric
+from attention import LSTMWithAttention
+from metrics import exact_match_metric_index
 from callbacks import NValidationSetsCallback, GradientLogger
-from generator import DataGenerator
+from generator import DataGeneratorAttention
 from utils import concatenate_texts
+import multiprocessing
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
-import multiprocessing
 
 
 @click.command()
@@ -116,18 +116,18 @@ def main(settings):
         "num_thinking_steps": settings_dict["thinking_steps"],
     }
 
-    training_generator = DataGenerator(
+    training_generator = DataGeneratorAttention(
         input_texts=input_texts_train, target_texts=target_texts_train, **params
     )
-    validation_generator = DataGenerator(
+    validation_generator = DataGeneratorAttention(
         input_texts=input_texts_valid, target_texts=target_texts_valid, **params
     )
-    interpolate_generator = DataGenerator(
+    interpolate_generator = DataGeneratorAttention(
         input_texts=input_texts["interpolate"],
         target_texts=target_texts["interpolate"],
         **params,
     )
-    extrapolate_generator = DataGenerator(
+    extrapolate_generator = DataGeneratorAttention(
         input_texts=input_texts["extrapolate"],
         target_texts=target_texts["extrapolate"],
         **params,
@@ -140,14 +140,26 @@ def main(settings):
     }
 
     history = NValidationSetsCallback(valid_dict)
-    gradient = GradientLogger(live_metrics=["loss", "exact_match_metric"], live_gaps=10)
+    gradient = GradientLogger(
+        live_metrics=["loss", "exact_match_metric_index"], live_gaps=10
+    )
 
     epochs = settings_dict["epochs"]  # Number of epochs to train for.
     latent_dim = settings_dict[
         "latent_dim"
     ]  # Latent dimensionality of the encoding space.
+    embedding_dim = settings_dict[
+        "embedding_dim"
+    ]  # embedding dimensionality of the encoding space.
 
-    lstm = LSTM_S2S(num_encoder_tokens, num_decoder_tokens, latent_dim)
+    lstm = LSTMWithAttention(
+        num_encoder_tokens,
+        num_decoder_tokens,
+        max_encoder_seq_length,
+        max_decoder_seq_length,
+        latent_dim,
+        embedding_dim,
+    )
 
     model = lstm.get_model()
     print(model.summary())
@@ -163,7 +175,9 @@ def main(settings):
     )
 
     model.compile(
-        optimizer=adam, loss="categorical_crossentropy", metrics=[exact_match_metric]
+        optimizer=adam,
+        loss="categorical_crossentropy",
+        metrics=[exact_match_metric_index],
     )
 
     # directory where the checkpoints will be saved
@@ -176,17 +190,18 @@ def main(settings):
     )
 
     print("Start training...")
+    # workers = cpu_count // 2 and no multiprocessing?
     train_hist = model.fit_generator(
         training_generator,
         epochs=epochs,
-        use_multiprocessing=True,
-        workers=cpu_count,
+        use_multiprocessing=False,
+        workers=cpu_count // 2,
         callbacks=[history, gradient, checkpoint_callback],
         verbose=0,
     )
 
     # create and save plot of losses
-    fig = plt.figure()
+    plt.figure()
     plt.plot(train_hist.history["loss"], color="C0", label="train")
     plt.plot(
         train_hist.history["validation_loss"], color="C0", label="valid", linestyle="--"
@@ -203,21 +218,21 @@ def main(settings):
     plt.savefig(settings_dict["save_path"] + "losses.png", dpi=300)
 
     # create and save plot of evaluation metrics
-    fig = plt.figure()
-    plt.plot(train_hist.history["exact_match_metric"], color="C0", label="train")
+    plt.figure()
+    plt.plot(train_hist.history["exact_match_metric_index"], color="C0", label="train")
     plt.plot(
-        train_hist.history["validation_exact_match_metric"],
+        train_hist.history["validation_exact_match_metric_index"],
         color="C0",
         label="valid",
         linestyle="--",
     )
     plt.plot(
-        train_hist.history["extrapolation_exact_match_metric"],
+        train_hist.history["extrapolation_exact_match_metric_index"],
         color="C1",
         label="extra",
     )
     plt.plot(
-        train_hist.history["interpolation_exact_match_metric"],
+        train_hist.history["interpolation_exact_match_metric_index"],
         color="C2",
         label="inter",
     )

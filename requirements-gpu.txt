@@ -6,3 +6,4 @@ jupyterlab
 matplotlib
 gradient
 gsutil
+click
