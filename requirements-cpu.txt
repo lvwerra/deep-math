@@ -8,3 +8,4 @@ gradient
 black
 gsutil
 click
+autoflake
