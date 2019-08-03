@@ -28,7 +28,7 @@ from tensorflow.keras.optimizers import Adam
 
 
 @click.command()
-@click.option("--settings", default="settings_local.json")
+@click.option("--settings", default="settings.json")
 def main(settings):
     print("Using TensorFlow version:", tf.__version__)
     print("GPU Available:", tf.test.is_gpu_available())

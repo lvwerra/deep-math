@@ -45,16 +45,10 @@ class LSTMWithAttention:
             input_length=self.max_encoder_seq_length,
             mask_zero=True,
         )(self.encoder_inputs)
-        # use CuDNNLSTM if running on GPU
         # encoder shape == (batch_size, max_encoder_seq_length, latent_dim)
-        if tf.test.is_gpu_available():
-            self.encoder_outputs = CuDNNLSTM(
-                self.latent_dim, return_sequences=True, unroll=True
-            )(encoder_emb)
-        else:
-            self.encoder_outputs = LSTM(
-                self.latent_dim, return_sequences=True, unroll=True
-            )(encoder_emb)
+        self.encoder_outputs = LSTM(
+            self.latent_dim, return_sequences=True, unroll=True
+        )(encoder_emb)
         # encoder_last shape == (batch_size, latent_dim)
         self.encoder_last = self.encoder_outputs[:, -1, :]
         self.encoder_last.set_shape([None, self.latent_dim])
@@ -69,14 +63,9 @@ class LSTMWithAttention:
             mask_zero=True,
         )(self.decoder_inputs)
         # decoder_outputs shape == (batch_size, max_decoder_seq_length, latent_dim)
-        if tf.test.is_gpu_available():
-            decoder_outputs = CuDNNLSTM(
-                self.latent_dim, return_sequences=True, unroll=True
-            )(decoder_emb, initial_state=[self.encoder_last, self.encoder_last])
-        else:
-            decoder_outputs = LSTM(self.latent_dim, return_sequences=True, unroll=True)(
-                decoder_emb, initial_state=[self.encoder_last, self.encoder_last]
-            )
+        decoder_outputs = LSTM(self.latent_dim, return_sequences=True, unroll=True)(
+            decoder_emb, initial_state=[self.encoder_last, self.encoder_last]
+        )
 
         # attention shape == (batch_size, max_decoder_seq_length, max_encoder_seq_length)
         attention = dot([decoder_outputs, self.encoder_outputs], axes=[2, 2])
