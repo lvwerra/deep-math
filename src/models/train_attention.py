@@ -1,120 +1,51 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-"""Run a Gradient job as follows:
-    gradient jobs create \
-    --name "lstm_attention_v0.1" \
-    --container tensorflow/tensorflow:2.0.0a0-gpu-py3-jupyter \
-    --machineType GPU+ \
-    --command "/paperspace/run_script.sh" \
-    --ignoreFiles "data,env"
-"""
-import os
-from pathlib import Path
-import pickle
-import pprint
 import json
+import logging
+import absl.logging
+import multiprocessing
+import os
+import pickle
+from pathlib import Path
+
 import click
 import matplotlib.pyplot as plt
-from attention import LSTMWithAttention
-from metrics import exact_match_metric_index
-from callbacks import NValidationSetsCallback, GradientLogger
-from generator import DataGeneratorAttention
-from utils import concatenate_texts
-import multiprocessing
-from sklearn.model_selection import train_test_split
 import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
 
+from attention import LSTMWithAttention
+from callbacks import GradientLogger, NValidationSetsCallback
+from generator import DataGeneratorAttention
+from metrics import exact_match_metric_index
+
+from utils import get_sequence_data
+
 
 @click.command()
-@click.option("--settings", default="settings.json")
+@click.option("--settings", default="settings_local.json")
 def main(settings):
-    print("Using TensorFlow version:", tf.__version__)
-    print("GPU Available:", tf.test.is_gpu_available())
-    cpu_count = multiprocessing.cpu_count()
-    print("Number of CPUs:", cpu_count)
+
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
 
     # load settings
     settings_path = Path("settings/" + settings)
     with open(str(settings_path), "r") as file:
         settings_dict = json.load(file)
 
-    print("Settings:")
-    pprint.pprint(settings_dict)
-
-    # define file paths
-    raw_path = Path(settings_dict["data_path"])
-    interpolate_path = raw_path / "interpolate"
-    extrapolate_path = raw_path / "extrapolate"
-
-    # configure module and train level
-    math_module = settings_dict["math_module"]
-    train_level = settings_dict["train_level"]
-
-    datasets = {
-        "train": (raw_path, "train-" + train_level + "/" + math_module),
-        "interpolate": (interpolate_path, math_module),
-        "extrapolate": (extrapolate_path, math_module),
-    }
-
-    # load raw data and split into input (questions) and target (answers)
-    input_texts = {}
-    target_texts = {}
-
-    for k, v in datasets.items():
-        input_texts[k], target_texts[k] = concatenate_texts(v[0], v[1])
-        print("Length of {} set is {}".format(k, len(input_texts[k])))
-
-    print("Sample input:", input_texts["train"][42])
-    print("Sample output:", target_texts["train"][42].strip())
-
-    # flatten
-    all_input_texts = sum(input_texts.values(), [])
-    all_target_texts = sum(target_texts.values(), [])
-
-    input_characters = set("".join(all_input_texts))
-    target_characters = set("".join(all_target_texts))
-
-    input_characters = sorted(list(input_characters))
-    target_characters = sorted(list(target_characters))
-    num_encoder_tokens = len(input_characters)
-    num_decoder_tokens = len(target_characters)
-    max_encoder_seq_length = max([len(txt) for txt in all_input_texts])
-    max_decoder_seq_length = max([len(txt) for txt in all_target_texts])
-
-    print("Number of samples:", len(all_input_texts))
-    print("Number of unique input tokens:", num_encoder_tokens)
-    print("Number of unique output tokens:", num_decoder_tokens)
-    print("Max sequence length for inputs:", max_encoder_seq_length)
-    print("Max sequence length for outputs:", max_decoder_seq_length)
-
-    del all_input_texts
-    del all_target_texts
-
-    input_texts_train, input_texts_valid, target_texts_train, target_texts_valid = train_test_split(
-        input_texts["train"], target_texts["train"], test_size=0.2, random_state=42
+    logger.info(
+        f"Training attention-based model on math module: {settings_dict['math_module']} and difficulty level: {settings_dict['train_level']}"
     )
 
-    print("Number of training samples:", len(input_texts_train))
+    logger.info(f"Using TensorFlow version: {tf.__version__}")
+    logger.info(f"GPU Available: {tf.test.is_gpu_available()}")
+    cpu_count = multiprocessing.cpu_count()
+    logger.info(f"Number of CPUs: {cpu_count}")
 
-    print("Number of validation samples:", len(input_texts_valid))
-
-    # Creating a mapping from unique characters to indices
-    input_token_index = dict([(char, i) for i, char in enumerate(input_characters)])
-    target_token_index = dict([(char, i) for i, char in enumerate(target_characters)])
-
-    # Parameters
-    params = {
-        "batch_size": settings_dict["batch_size"],
-        "max_encoder_seq_length": max_encoder_seq_length,
-        "max_decoder_seq_length": max_decoder_seq_length,
-        "num_encoder_tokens": num_encoder_tokens,
-        "num_decoder_tokens": num_decoder_tokens,
-        "input_token_index": input_token_index,
-        "target_token_index": target_token_index,
-        "num_thinking_steps": settings_dict["thinking_steps"],
-    }
+    params, input_texts_train, input_texts_valid, target_texts_train, target_texts_valid, input_texts, target_texts = get_sequence_data(
+        settings_dict
+    )
 
     training_generator = DataGeneratorAttention(
         input_texts=input_texts_train, target_texts=target_texts_train, **params
@@ -153,10 +84,10 @@ def main(settings):
     ]  # embedding dimensionality of the encoding space.
 
     lstm = LSTMWithAttention(
-        num_encoder_tokens,
-        num_decoder_tokens,
-        max_encoder_seq_length,
-        max_decoder_seq_length,
+        params["num_encoder_tokens"],
+        params["num_decoder_tokens"],
+        params["max_encoder_seq_length"],
+        params["max_decoder_seq_length"],
         latent_dim,
         embedding_dim,
     )
@@ -258,4 +189,8 @@ def main(settings):
 
 
 if __name__ == "__main__":
+    log_fmt = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    # workaround for abseil issue https://github.com/tensorflow/tensorflow/issues/26691
+    absl.logging.get_absl_handler().setFormatter(log_fmt)
+
     main()

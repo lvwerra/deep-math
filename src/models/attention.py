@@ -3,8 +3,6 @@ This attention-based seq2seq model is largely copied from:
 https://wanasit.github.io/attention-based-sequence-to-sequence-in-keras.html
 """
 import numpy as np
-import tensorflow as tf
-from tensorflow.compat.v1.keras.layers import CuDNNLSTM
 from tensorflow.keras.layers import (
     LSTM,
     Activation,

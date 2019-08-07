@@ -1,27 +1,36 @@
+#!/usr/bin/env python
+# coding: utf-8
 import json
+import logging
 import pickle
-import pprint
 import sys
 from pathlib import Path
 
 import click
+import numpy as np
 from sklearn.model_selection import train_test_split
 
 sys.path.append("./")
 from src.models.utils import concatenate_texts
 
 
+DATA_PATH = "data/processed/"
+
+
 @click.command()
 @click.option("--settings", default="settings.json")
 def main(settings):
+
+    logger = logging.getLogger(__name__)
 
     # load settings
     settings_path = Path("settings/" + settings)
     with open(str(settings_path), "r") as file:
         settings_dict = json.load(file)
 
-    print("Settings:")
-    pprint.pprint(settings_dict)
+    logger.info(
+        f"Generating sequence data for math module: {settings_dict['math_module']} and difficulty level: {settings_dict['train_level']}"
+    )
 
     # define file paths
     raw_path = Path(settings_dict["data_path"])
@@ -44,10 +53,11 @@ def main(settings):
 
     for k, v in datasets.items():
         input_texts[k], target_texts[k] = concatenate_texts(v[0], v[1])
-        print("Length of {} set is {}".format(k, len(input_texts[k])))
+        logger.info(f"Length of {k} set is {len(input_texts[k])} questions")
 
-    print("Sample input:", input_texts["train"][42])
-    print("Sample output:", target_texts["train"][42].strip())
+    random_idx = np.random.randint(1, len(input_texts["train"]))
+    logger.info(f"Sample input: {input_texts['train'][random_idx]}")
+    logger.info(f"Sample output: {target_texts['train'][random_idx].strip()}")
 
     # flatten
     all_input_texts = sum(input_texts.values(), [])
@@ -63,27 +73,24 @@ def main(settings):
     max_encoder_seq_length = max([len(txt) for txt in all_input_texts])
     max_decoder_seq_length = max([len(txt) for txt in all_target_texts])
 
-    print("Name of module:", settings_dict["math_module"])
-    print("Number of samples:", len(all_input_texts))
-    print("Number of unique input tokens:", num_encoder_tokens)
-    print("Number of unique output tokens:", num_decoder_tokens)
-    print("Max sequence length for inputs:", max_encoder_seq_length)
-    print("Max sequence length for outputs:", max_decoder_seq_length)
+    logger.info(f"Number of unique input tokens: {num_encoder_tokens}")
+    logger.info(f"Number of unique output tokens: {num_decoder_tokens}")
+    logger.info(f"Max sequence length for inputs: {max_encoder_seq_length}")
+    logger.info(f"Max sequence length for outputs: {max_decoder_seq_length}")
 
     input_texts_train, input_texts_valid, target_texts_train, target_texts_valid = train_test_split(
         input_texts["train"], target_texts["train"], test_size=0.2, random_state=42
     )
 
-    print("Number of training samples:", len(input_texts_train))
+    logger.info(f"Number of training samples: {len(input_texts_train)}")
 
-    print("Number of validation samples:", len(input_texts_valid))
+    logger.info(f"Number of validation samples: {len(input_texts_valid)}")
 
-    # Creating a mapping from unique characters to indices
+    # create a mapping from unique characters to indices
     input_token_index = dict([(char, i) for i, char in enumerate(input_characters)])
     target_token_index = dict([(char, i) for i, char in enumerate(target_characters)])
 
-    # Parameters
-    sequences = {
+    sequence_data = {
         "input_token_index": input_token_index,
         "target_token_index": target_token_index,
         "input_texts": input_texts,
@@ -97,14 +104,21 @@ def main(settings):
         "num_thinking_steps": settings_dict["thinking_steps"],
     }
 
-    with open(f"./data/processed/{settings_dict['math_module']}.pkl", "wb") as file:
-        pickle.dump(sequences, file)
+    # write sequence data to disk
+    FILE_NAME = settings_dict["math_module"] + "-" + settings_dict["train_level"]
 
-    with open("./foo.pkl", "rb") as file:
+    with open(f"{DATA_PATH}{FILE_NAME}.pkl", "wb") as file:
+        pickle.dump(sequence_data, file)
+
+    with open(f"{DATA_PATH}{FILE_NAME}.pkl", "rb") as file:
         foo = pickle.load(file)
 
     print(foo["input_texts"]["train"][0])
+    print(foo["input_token_index"])
 
 
 if __name__ == "__main__":
+    log_fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    logging.basicConfig(level=logging.INFO, format=log_fmt)
+
     main()
