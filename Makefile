@@ -1,4 +1,9 @@
-.PHONY: gradient_job dataset
+.PHONY: gradient_job dataset sequences
+
+#################################################################################
+# GLOBALS                                                                       #
+#################################################################################
+SETTINGS_FILE = "settings_local.json"
 
 #################################################################################
 # COMMANDS                                                                      #
@@ -16,3 +21,6 @@ dataset:
 	cd data/raw/; gsutil cp gs://mathematics-dataset/mathematics_dataset-v1.0.tar.gz .
 	cd data/raw; tar -xvzf mathematics_dataset-v1.0.tar.gz
 	cd data/raw; rm mathematics_dataset-v1.0.tar.gz
+
+sequences:
+	python src/data/sequences.py --settings $(SETTINGS_FILE)
