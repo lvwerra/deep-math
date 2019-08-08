@@ -8,8 +8,6 @@ import click
 import numpy as np
 from utils import concatenate_texts
 
-OUTPUT_FILE_PATH = Path("data/processed/")
-
 
 @click.command()
 @click.option("--settings", default="settings.json")
@@ -27,13 +25,16 @@ def main(settings):
     train_level = settings_dict["train_level"]
 
     logger.info(
-        f"Generating sequence data for math module << {math_module} >> and difficulty level << {train_level} >>"
+        "Generating sequence data for math module << {} >> and difficulty level << {} >>".format(
+            math_module, train_level
+        )
     )
 
     # define file paths
-    raw_path = Path(settings_dict["data_path"])
+    raw_path = Path(settings_dict["data_path"] + "raw/v1.0/")
     interpolate_path = raw_path / "interpolate"
     extrapolate_path = raw_path / "extrapolate"
+    output_path = Path(settings_dict["data_path"] + "processed/")
 
     datasets = {
         "train": (raw_path, "train-" + train_level + "/" + math_module),
@@ -47,11 +48,11 @@ def main(settings):
 
     for k, v in datasets.items():
         input_texts[k], target_texts[k] = concatenate_texts(v[0], v[1])
-        logger.info(f"Length of {k} set is {len(input_texts[k])} questions")
+        logger.info("Length of {} set is {} questions".format(k, len(input_texts[k])))
 
     random_idx = np.random.randint(1, len(input_texts["train"]))
-    logger.info(f"Sample input: {input_texts['train'][random_idx]}")
-    logger.info(f"Sample output: {target_texts['train'][random_idx].strip()}")
+    logger.info("Sample input: {}".format(input_texts["train"][random_idx]))
+    logger.info("Sample output: {}".format(target_texts["train"][random_idx].strip()))
 
     # flatten texts
     all_input_texts = sum(input_texts.values(), [])
@@ -67,10 +68,10 @@ def main(settings):
     max_encoder_seq_length = max([len(txt) for txt in all_input_texts])
     max_decoder_seq_length = max([len(txt) for txt in all_target_texts])
 
-    logger.info(f"Number of unique input tokens: {num_encoder_tokens}")
-    logger.info(f"Number of unique output tokens: {num_decoder_tokens}")
-    logger.info(f"Max sequence length for inputs: {max_encoder_seq_length}")
-    logger.info(f"Max sequence length for outputs: {max_decoder_seq_length}")
+    logger.info("Number of unique input tokens: {}".format(num_encoder_tokens))
+    logger.info("Number of unique output tokens: {}".format(num_decoder_tokens))
+    logger.info("Max sequence length for inputs: {}".format(max_encoder_seq_length))
+    logger.info("Max sequence length for outputs: {}".format(max_decoder_seq_length))
 
     # create a mapping from unique characters to indices
     input_token_index = dict([(char, i) for i, char in enumerate(input_characters)])
@@ -92,8 +93,9 @@ def main(settings):
 
     # write sequence data to disk
     OUTPUT_FILE_NAME = settings_dict["math_module"] + "-" + settings_dict["train_level"]
+    OUTPUT_PATH = output_path / OUTPUT_FILE_NAME
 
-    with open(f"{OUTPUT_FILE_PATH}/{OUTPUT_FILE_NAME}.pkl", "wb") as file:
+    with open("{}.pkl".format(OUTPUT_PATH), "wb") as file:
         pickle.dump(sequence_data, file)
 
 

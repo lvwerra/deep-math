@@ -31,13 +31,15 @@ def main(settings):
         settings_dict = json.load(file)
 
     logger.info(
-        f"Training attention-based model on math module: {settings_dict['math_module']} and difficulty level: {settings_dict['train_level']}"
+        "Training attention-based model on math module: {} and difficulty level: {}".format(
+            settings_dict["math_module"], settings_dict["train_level"]
+        )
     )
 
-    logger.info(f"Using TensorFlow version: {tf.__version__}")
-    logger.info(f"GPU Available: {tf.test.is_gpu_available()}")
+    logger.info("Using TensorFlow version: {}".format(tf.__version__))
+    logger.info("GPU Available: {}".format(tf.test.is_gpu_available()))
     cpu_count = multiprocessing.cpu_count()
-    logger.info(f"Number of CPUs: {cpu_count}")
+    logger.info("Number of CPUs: {}".format(cpu_count))
 
     params, inputs, targets = get_sequence_data(settings_dict)
 

@@ -2,17 +2,35 @@
 # coding: utf-8
 import pickle
 from sklearn.model_selection import train_test_split
+from pathlib import Path
+import subprocess
+import logging
 
 
 def get_sequence_data(settings_dict):
-    # define file paths
-    sequence_data_path = "data/processed/"
 
-    SEQUENCE_DATA_FILE = (
+    logger = logging.getLogger(__name__)
+    log_fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    logging.basicConfig(level=logging.INFO, format=log_fmt)
+    logger.setLevel(logging.INFO)
+
+    PROCESSED_PATH = Path(settings_dict["data_path"] + "processed/")
+
+    SEQUENCE_DATA_FNAME = (
         settings_dict["math_module"] + "-" + settings_dict["train_level"]
     )
 
-    with open(f"{sequence_data_path}{SEQUENCE_DATA_FILE}.pkl", "rb") as file:
+    SEQUENCE_DATA_PATH = PROCESSED_PATH / SEQUENCE_DATA_FNAME
+
+    if not SEQUENCE_DATA_PATH.is_file():
+        logger.info(
+            "Sequence data not found for module << {} >>! Generating sequence data ...".format(
+                settings_dict["math_module"]
+            )
+        )
+        subprocess.call(["make sequence_data"], stdout=subprocess.PIPE, shell=True)
+
+    with open("{}.pkl".format(SEQUENCE_DATA_PATH), "rb") as file:
         sequence_data = pickle.load(file)
 
     # load raw data and split into input (questions) and target (answers)
