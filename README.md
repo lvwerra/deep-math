@@ -18,7 +18,7 @@ Spin up the virtual environment and intall the required packages:
 
 ```bash
 source ./env/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-{cpu or gpu}.txt
 ```
 
 ## Make commands

@@ -1,5 +1,5 @@
 """
-This attention-based seq2seq model is largely copied from:
+This attention-based seq2seq model is based on:
 https://wanasit.github.io/attention-based-sequence-to-sequence-in-keras.html
 """
 import numpy as np
