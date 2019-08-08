@@ -45,7 +45,7 @@ class DataGenerator(tf.keras.utils.Sequence):
     def on_epoch_end(self):
         "Updates indexes after each epoch"
         self.indexes = np.arange(len(self.input_texts))
-        if self.shuffle == True:
+        if self.shuffle is True:
             np.random.shuffle(self.indexes)
 
     def __data_generation(self, indexes):
@@ -137,7 +137,7 @@ class DataGeneratorAttention(tf.keras.utils.Sequence):
     def on_epoch_end(self):
         "Updates indexes after each epoch"
         self.indexes = np.arange(len(self.input_texts))
-        if self.shuffle == True:
+        if self.shuffle is True:
             np.random.shuffle(self.indexes)
 
     def __data_generation(self, indexes):
