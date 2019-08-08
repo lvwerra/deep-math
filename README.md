@@ -36,7 +36,7 @@ Processes raw question-answer pairs into form needed for training models:
 ```
 make sequence_data
 ```
-Choice of math module and difficulty level configured by `settings.json`
+Choice of math module and difficulty level configured by `settings.json`. Data is stored in `data/processed/` as`math-module_dificulty-level.pkl`.
 
 ### Submit Gradient job
 Login to Paperspace, create an API key and add it to a credentials file with the following profile:
