@@ -1,24 +1,20 @@
 #!/usr/bin/env python
 # coding: utf-8
-
 import json
 import logging
-import absl.logging
 import multiprocessing
 import os
 import pickle
 from pathlib import Path
-
+import absl.logging
 import click
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
-
 from attention import LSTMWithAttention
 from callbacks import GradientLogger, NValidationSetsCallback
 from generator import DataGeneratorAttention
 from metrics import exact_match_metric_index
-
 from utils import get_sequence_data
 
 
@@ -43,25 +39,19 @@ def main(settings):
     cpu_count = multiprocessing.cpu_count()
     logger.info(f"Number of CPUs: {cpu_count}")
 
-    params, input_texts_train, input_texts_valid, target_texts_train, target_texts_valid, input_texts, target_texts = get_sequence_data(
-        settings_dict
-    )
+    params, inputs, targets = get_sequence_data(settings_dict)
 
     training_generator = DataGeneratorAttention(
-        input_texts=input_texts_train, target_texts=target_texts_train, **params
+        input_texts=inputs["train"], target_texts=targets["train"], **params
     )
     validation_generator = DataGeneratorAttention(
-        input_texts=input_texts_valid, target_texts=target_texts_valid, **params
+        input_texts=inputs["valid"], target_texts=targets["valid"], **params
     )
     interpolate_generator = DataGeneratorAttention(
-        input_texts=input_texts["interpolate"],
-        target_texts=target_texts["interpolate"],
-        **params,
+        input_texts=inputs["interpolate"], target_texts=targets["interpolate"], **params
     )
     extrapolate_generator = DataGeneratorAttention(
-        input_texts=input_texts["extrapolate"],
-        target_texts=target_texts["extrapolate"],
-        **params,
+        input_texts=inputs["extrapolate"], target_texts=targets["extrapolate"], **params
     )
 
     valid_dict = {
@@ -75,21 +65,13 @@ def main(settings):
         live_metrics=["loss", "exact_match_metric_index"], live_gaps=10
     )
 
-    epochs = settings_dict["epochs"]  # Number of epochs to train for.
-    latent_dim = settings_dict[
-        "latent_dim"
-    ]  # Latent dimensionality of the encoding space.
-    embedding_dim = settings_dict[
-        "embedding_dim"
-    ]  # embedding dimensionality of the encoding space.
-
     lstm = LSTMWithAttention(
         params["num_encoder_tokens"],
         params["num_decoder_tokens"],
         params["max_encoder_seq_length"],
         params["max_decoder_seq_length"],
-        latent_dim,
-        embedding_dim,
+        settings_dict["latent_dim"],
+        settings_dict["embedding_dim"],
     )
 
     model = lstm.get_model()
@@ -120,11 +102,11 @@ def main(settings):
         filepath=checkpoint_prefix, save_weights_only=True
     )
 
-    print("Start training...")
+    logger.info("Start training...")
     # workers = cpu_count // 2 and no multiprocessing?
     train_hist = model.fit_generator(
         training_generator,
-        epochs=epochs,
+        epochs=settings_dict["epochs"],
         use_multiprocessing=False,
         workers=cpu_count // 2,
         callbacks=[history, gradient, checkpoint_callback],

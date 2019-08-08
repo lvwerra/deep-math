@@ -1,24 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
-
 import pickle
 from sklearn.model_selection import train_test_split
-
-
-def concatenate_texts(path, pattern):
-    file_paths = list(path.glob("{}*.txt".format(pattern)))
-
-    input_texts = []
-    target_texts = []
-
-    for file_path in file_paths:
-        with open(str(file_path), "r", encoding="utf-8") as f:
-            lines = f.read().split("\n")[:-1]
-
-        input_texts.extend(lines[0::2])
-        target_texts.extend(["\t" + target_text + "\n" for target_text in lines[1::2]])
-
-    return input_texts, target_texts
 
 
 def get_sequence_data(settings_dict):
@@ -45,6 +28,18 @@ def get_sequence_data(settings_dict):
         input_texts["train"], target_texts["train"], test_size=0.2, random_state=42
     )
 
+    inputs, targets = {}, {}
+
+    inputs["train"] = input_texts_train
+    inputs["valid"] = input_texts_valid
+    inputs["interpolate"] = input_texts["interpolate"]
+    inputs["extrapolate"] = input_texts["extrapolate"]
+
+    targets["train"] = target_texts_train
+    targets["valid"] = target_texts_valid
+    targets["interpolate"] = target_texts["interpolate"]
+    targets["extrapolate"] = target_texts["extrapolate"]
+
     # Creating a mapping from unique characters to indices
     input_token_index = sequence_data["input_token_index"]
     target_token_index = sequence_data["target_token_index"]
@@ -61,12 +56,4 @@ def get_sequence_data(settings_dict):
         "num_thinking_steps": settings_dict["thinking_steps"],
     }
 
-    return (
-        params,
-        input_texts_train,
-        input_texts_valid,
-        target_texts_train,
-        target_texts_valid,
-        input_texts,
-        target_texts,
-    )
+    return params, inputs, targets
