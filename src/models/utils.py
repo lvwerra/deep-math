@@ -14,17 +14,11 @@ def get_sequence_data(settings_dict):
     logging.basicConfig(level=logging.INFO, format=log_fmt)
     logger.setLevel(logging.INFO)
 
-    PROCESSED_PATH = Path(settings_dict["data_path"] + "processed/")
+    output_path = Path(settings_dict["data_path"] + "processed/")
+    output_file_name = settings_dict["math_module"] + "-" + settings_dict["train_level"]
+    output_file_path = (output_path / output_file_name).with_suffix(".pkl")
 
-    SEQUENCE_DATA_FNAME = (
-        settings_dict["math_module"] + "-" + settings_dict["train_level"]
-    )
-
-    SEQUENCE_DATA_PATH = (PROCESSED_PATH / SEQUENCE_DATA_FNAME).with_suffix(".pkl")
-
-    logger.info(SEQUENCE_DATA_PATH)
-
-    if not SEQUENCE_DATA_PATH.is_file():
+    if not output_file_path.is_file():
         logger.info(
             "Sequence data not found for module << {} >>! Generating sequence data ...".format(
                 settings_dict["math_module"]
@@ -32,12 +26,12 @@ def get_sequence_data(settings_dict):
         )
         subprocess.call(["make sequence_data"], stdout=subprocess.PIPE, shell=True)
 
-    with open("{}".format(SEQUENCE_DATA_PATH), "rb") as file:
+    with open("{}".format(output_file_path), "rb") as file:
         sequence_data = pickle.load(file)
 
     # load raw data and split into input (questions) and target (answers)
-    input_texts = sequence_data["input_texts"]
-    target_texts = sequence_data["target_texts"]
+    raw_input_texts = sequence_data["input_texts"]
+    raw_target_texts = sequence_data["target_texts"]
 
     num_encoder_tokens = sequence_data["num_encoder_tokens"]
     num_decoder_tokens = sequence_data["num_decoder_tokens"]
@@ -45,27 +39,30 @@ def get_sequence_data(settings_dict):
     max_decoder_seq_length = sequence_data["max_decoder_seq_length"]
 
     input_texts_train, input_texts_valid, target_texts_train, target_texts_valid = train_test_split(
-        input_texts["train"], target_texts["train"], test_size=0.2, random_state=42
+        raw_input_texts["train"],
+        raw_target_texts["train"],
+        test_size=0.2,
+        random_state=42,
     )
 
-    inputs, targets = {}, {}
+    input_texts, target_texts = {}, {}
 
-    inputs["train"] = input_texts_train
-    inputs["valid"] = input_texts_valid
-    inputs["interpolate"] = input_texts["interpolate"]
-    inputs["extrapolate"] = input_texts["extrapolate"]
+    input_texts["train"] = input_texts_train
+    input_texts["valid"] = input_texts_valid
+    input_texts["interpolate"] = raw_input_texts["interpolate"]
+    input_texts["extrapolate"] = raw_input_texts["extrapolate"]
 
-    targets["train"] = target_texts_train
-    targets["valid"] = target_texts_valid
-    targets["interpolate"] = target_texts["interpolate"]
-    targets["extrapolate"] = target_texts["extrapolate"]
+    target_texts["train"] = target_texts_train
+    target_texts["valid"] = target_texts_valid
+    target_texts["interpolate"] = raw_target_texts["interpolate"]
+    target_texts["extrapolate"] = raw_target_texts["extrapolate"]
 
-    # Creating a mapping from unique characters to indices
+    # create a mapping from unique characters to indices
     input_token_index = sequence_data["input_token_index"]
     target_token_index = sequence_data["target_token_index"]
 
-    # parameters for data generators
-    params = {
+    # set parameters for data generators
+    data_gen_pars = {
         "batch_size": settings_dict["batch_size"],
         "max_encoder_seq_length": max_encoder_seq_length,
         "max_decoder_seq_length": max_decoder_seq_length,
@@ -76,4 +73,4 @@ def get_sequence_data(settings_dict):
         "num_thinking_steps": settings_dict["thinking_steps"],
     }
 
-    return params, inputs, targets
+    return data_gen_pars, input_texts, target_texts
