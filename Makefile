@@ -4,7 +4,7 @@
 # GLOBALS                                                                       #
 #################################################################################
 SETTINGS_FILE = "settings.json"
-GRADIENT_JOB = "attention_arithmetic-all"
+GRADIENT_JOB = "attention_numbers__round-number-easy"
 GRADIENT_PROJECT = pr1hc80pw
 GRADIENT_MACHINE = GPU+
 GRADIENT_TEAM = "tensor-league"
