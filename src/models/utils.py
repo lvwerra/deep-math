@@ -8,6 +8,16 @@ import logging
 
 
 def get_sequence_data(settings_dict):
+    """Processes raw input and target texts to extract vocabs, tokens, and sequence lengths.
+
+    Args:
+        settings_dict: A dictionary storing configuration settings.
+
+    Returns:
+        data_gen_pars: A dictionary of configuration parameters for the Keras data generators.
+        input_texts: A dictionary of key:value pairs whose values span train, validation, interpolation, and extrapolation sets.
+        target_texts: A dictionary of key:value pairs whose values span train, validation, interpolation, and extrapolation sets.
+    """
 
     logger = logging.getLogger(__name__)
     log_fmt = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

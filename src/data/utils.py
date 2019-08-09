@@ -1,4 +1,15 @@
 def concatenate_texts(path, pattern):
+    """Globs math module text files according to pattern.
+
+    Args:
+        path: pathlib Path to text files.
+        pattern: pattern to glob on.
+
+    Returns:
+        input_texts: list of questions.
+        target_texts: list of answers.
+    """
+
     file_paths = list(path.glob("{}*.txt".format(pattern)))
 
     input_texts = []
