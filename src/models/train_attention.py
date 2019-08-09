@@ -31,29 +31,36 @@ def main(settings):
         settings_dict = json.load(file)
 
     logger.info(
-        "Training attention-based model on math module: {} and difficulty level: {}".format(
+        "Training attention-based model on math module << {} >> and difficulty level << {} >>".format(
             settings_dict["math_module"], settings_dict["train_level"]
         )
     )
-
     logger.info("Using TensorFlow version: {}".format(tf.__version__))
     logger.info("GPU Available: {}".format(tf.test.is_gpu_available()))
     cpu_count = multiprocessing.cpu_count()
     logger.info("Number of CPUs: {}".format(cpu_count))
 
-    params, inputs, targets = get_sequence_data(settings_dict)
+    data_gen_pars, input_texts, target_texts = get_sequence_data(settings_dict)
 
     training_generator = DataGeneratorAttention(
-        input_texts=inputs["train"], target_texts=targets["train"], **params
+        input_texts=input_texts["train"],
+        target_texts=target_texts["train"],
+        **data_gen_pars
     )
     validation_generator = DataGeneratorAttention(
-        input_texts=inputs["valid"], target_texts=targets["valid"], **params
+        input_texts=input_texts["valid"],
+        target_texts=target_texts["valid"],
+        **data_gen_pars
     )
     interpolate_generator = DataGeneratorAttention(
-        input_texts=inputs["interpolate"], target_texts=targets["interpolate"], **params
+        input_texts=input_texts["interpolate"],
+        target_texts=target_texts["interpolate"],
+        **data_gen_pars
     )
     extrapolate_generator = DataGeneratorAttention(
-        input_texts=inputs["extrapolate"], target_texts=targets["extrapolate"], **params
+        input_texts=input_texts["extrapolate"],
+        target_texts=target_texts["extrapolate"],
+        **data_gen_pars
     )
 
     valid_dict = {
@@ -68,10 +75,10 @@ def main(settings):
     )
 
     lstm = LSTMWithAttention(
-        params["num_encoder_tokens"],
-        params["num_decoder_tokens"],
-        params["max_encoder_seq_length"],
-        params["max_decoder_seq_length"],
+        data_gen_pars["num_encoder_tokens"],
+        data_gen_pars["num_decoder_tokens"],
+        data_gen_pars["max_encoder_seq_length"],
+        data_gen_pars["max_decoder_seq_length"],
         settings_dict["latent_dim"],
         settings_dict["embedding_dim"],
     )
@@ -104,7 +111,7 @@ def main(settings):
         filepath=checkpoint_prefix, save_weights_only=True
     )
 
-    logger.info("Start training...")
+    logger.info("Start training ...")
     # workers = cpu_count // 2 and no multiprocessing?
     train_hist = model.fit_generator(
         training_generator,
@@ -161,7 +168,7 @@ def main(settings):
     plt.savefig(settings_dict["save_path"] + "metrics.png", dpi=300)
 
     # save callbacks data
-    with open(settings_dict["save_path"] + "experiments_output.pkl", "wb") as file:
+    with open(settings_dict["save_path"] + "callbacks.pkl", "wb") as file:
         pickle.dump(train_hist.history, file)
 
     # save model
