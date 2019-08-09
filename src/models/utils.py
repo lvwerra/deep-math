@@ -20,7 +20,9 @@ def get_sequence_data(settings_dict):
         settings_dict["math_module"] + "-" + settings_dict["train_level"]
     )
 
-    SEQUENCE_DATA_PATH = PROCESSED_PATH / SEQUENCE_DATA_FNAME
+    SEQUENCE_DATA_PATH = (PROCESSED_PATH / SEQUENCE_DATA_FNAME).with_suffix(".pkl")
+
+    logger.info(SEQUENCE_DATA_PATH)
 
     if not SEQUENCE_DATA_PATH.is_file():
         logger.info(
@@ -30,7 +32,7 @@ def get_sequence_data(settings_dict):
         )
         subprocess.call(["make sequence_data"], stdout=subprocess.PIPE, shell=True)
 
-    with open("{}.pkl".format(SEQUENCE_DATA_PATH), "rb") as file:
+    with open("{}".format(SEQUENCE_DATA_PATH), "rb") as file:
         sequence_data = pickle.load(file)
 
     # load raw data and split into input (questions) and target (answers)
