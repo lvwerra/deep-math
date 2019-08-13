@@ -103,8 +103,7 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-data/
-\.ps_project/
+data/**/
 
 # VS Code files
 .vscode/*
