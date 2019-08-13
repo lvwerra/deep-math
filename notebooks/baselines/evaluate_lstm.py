@@ -51,7 +51,7 @@ class LSTM_Evaluator:
             exact_match = len([0 for out_true, out_preds in zip(outputs_true, outputs_preds) if out_true.strip()==out_preds.strip()])/len(outputs_true)
         
         else:
-            result = self.lstm.model.evaluate_generator(self.data_generator, verbose=1)
+            result = self.lstm.model.evaluate_generator(self.data_generator, verbose=0)
             exact_match = result[1]
             
         return exact_match
