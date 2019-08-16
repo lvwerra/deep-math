@@ -11,6 +11,7 @@ from tensorflow.keras.layers import (
     TimeDistributed,
     concatenate,
     dot,
+    Bidirectional,
 )
 from tensorflow.keras.models import Model
 
@@ -22,14 +23,16 @@ class LSTMWithAttention:
         num_decoder_tokens,
         max_encoder_seq_length,
         max_decoder_seq_length,
-        latent_dim,
+        num_encoder_units,
+        num_decoder_units,
         embedding_dim,
     ):
         self.num_encoder_tokens = num_encoder_tokens
         self.num_decoder_tokens = num_decoder_tokens
         self.max_encoder_seq_length = max_encoder_seq_length
         self.max_decoder_seq_length = max_decoder_seq_length
-        self.latent_dim = latent_dim
+        self.num_encoder_units = num_encoder_units
+        self.num_decoder_units = num_decoder_units
         self.embedding_dim = embedding_dim
 
     def get_model(self):
@@ -39,13 +42,14 @@ class LSTMWithAttention:
         encoder_emb = Embedding(
             self.num_encoder_tokens + 1, self.embedding_dim, mask_zero=True
         )(self.encoder_inputs)
-        # encoder shape == (batch_size, encoder_seq_length, latent_dim)
-        self.encoder_outputs = LSTM(
-            self.latent_dim, return_sequences=True, unroll=False
+        # encoder shape == (batch_size, encoder_seq_length, num_encoder_units)
+        self.encoder_outputs = Bidirectional(
+            LSTM(self.num_encoder_units, return_sequences=True, unroll=False)
         )(encoder_emb)
-        # encoder_last shape == (batch_size, latent_dim)
+        self.encoder_outputs = Dense(self.num_decoder_units)(self.encoder_outputs)
+        # encoder_last shape == (batch_size, num_decoder_units)
         self.encoder_last = self.encoder_outputs[:, -1, :]
-        self.encoder_last.set_shape([None, self.latent_dim])
+        self.encoder_last.set_shape([None, self.num_decoder_units])
 
         # decoder_inputs shape == (batch_size, decoder_seq_length)
         self.decoder_inputs = Input(shape=(None,))
@@ -53,10 +57,10 @@ class LSTMWithAttention:
         decoder_emb = Embedding(
             self.num_decoder_tokens + 1, self.embedding_dim, mask_zero=True
         )(self.decoder_inputs)
-        # decoder_outputs shape == (batch_size, decoder_seq_length, latent_dim)
-        decoder_outputs = LSTM(self.latent_dim, return_sequences=True, unroll=False)(
-            decoder_emb, initial_state=[self.encoder_last, self.encoder_last]
-        )
+        # decoder_outputs shape == (batch_size, decoder_seq_length, num_decoder_units)
+        decoder_outputs = LSTM(
+            self.num_decoder_units, return_sequences=True, unroll=False
+        )(decoder_emb, initial_state=[self.encoder_last, self.encoder_last])
 
         # attention shape == (batch_size, decoder_seq_length, max_encoder_seq_length)
         attention = dot([decoder_outputs, self.encoder_outputs], axes=[2, 2])
@@ -65,13 +69,13 @@ class LSTMWithAttention:
         # context shape == (batch_size, decoder_seq_length, latent_dim)
         context = dot([attention, self.encoder_outputs], axes=[2, 1])
 
-        # decoder_combined_context shape == (batch_size, decoder_seq_length, 2 * latent_dim)
+        # decoder_combined_context shape == (batch_size, decoder_seq_length, latent_dim)
         decoder_combined_context = concatenate([context, decoder_outputs])
 
         # decoder_outputs shape == (batch_size, decoder_seq_length)
-        decoder_outputs = TimeDistributed(Dense(self.latent_dim, activation="tanh"))(
-            decoder_combined_context
-        )
+        decoder_outputs = TimeDistributed(
+            Dense(self.num_decoder_units, activation="tanh")
+        )(decoder_combined_context)
         # decoder_outputs shape == (batch_size, decoder_seq_length, num_decoder_tokens)
         decoder_outputs = TimeDistributed(
             Dense(self.num_decoder_tokens, activation="softmax")

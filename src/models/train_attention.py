@@ -79,7 +79,8 @@ def main(settings):
         data_gen_pars["num_decoder_tokens"],
         data_gen_pars["max_encoder_seq_length"],
         data_gen_pars["max_decoder_seq_length"],
-        settings_dict["latent_dim"],
+        settings_dict["num_encoder_units"],
+        settings_dict["num_decoder_units"],
         settings_dict["embedding_dim"],
     )
 
