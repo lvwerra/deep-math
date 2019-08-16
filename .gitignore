@@ -113,3 +113,5 @@ data/**/
 
 # Paperspace Gradient files
 deep-math.zip
+
+\.idea/
