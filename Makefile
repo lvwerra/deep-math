@@ -3,7 +3,7 @@
 #################################################################################
 # GLOBALS                                                                       #
 #################################################################################
-SETTINGS_FILE = "settings.json"
+SETTINGS_FILE = "settings_local.json"
 GRADIENT_JOB = "attention_numbers__round-number-easy"
 GRADIENT_PROJECT = pr1hc80pw
 GRADIENT_MACHINE = GPU+
@@ -30,7 +30,7 @@ dataset:
 	cd data/raw; rm mathematics_dataset-v1.0.tar.gz
 
 sequence_data:
-	python src/data/sequences.py --settings $(SETTINGS_FILE)
+	python src/sequences.py --settings $(SETTINGS_FILE)
 
 #################################################################################
 # Self Documenting Commands                                                     #
