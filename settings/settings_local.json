@@ -6,7 +6,7 @@
     "epochs": 1,
     "num_encoder_units": 512,
     "num_decoder_units": 2048,
-    "embedding_dim": 256,
-    "save_path": "/artifacts/",
-    "data_path": "data/"
+    "embedding_dim": 2048,
+    "save_path": "../data/",
+    "data_path": "../data/"
 }

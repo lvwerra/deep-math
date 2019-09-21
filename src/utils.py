@@ -45,8 +45,10 @@ def get_sequence_data(settings_dict):
 
     num_encoder_tokens = sequence_data["num_encoder_tokens"]
     num_decoder_tokens = sequence_data["num_decoder_tokens"]
+    num_tokens = sequence_data["num_tokens"]
     max_encoder_seq_length = sequence_data["max_encoder_seq_length"]
     max_decoder_seq_length = sequence_data["max_decoder_seq_length"]
+    max_seq_length = sequence_data["max_seq_length"]
 
     input_texts_train, input_texts_valid, target_texts_train, target_texts_valid = train_test_split(
         raw_input_texts["train"],
@@ -70,17 +72,48 @@ def get_sequence_data(settings_dict):
     # create a mapping from unique characters to indices
     input_token_index = sequence_data["input_token_index"]
     target_token_index = sequence_data["target_token_index"]
+    token_index = sequence_data["token_index"]
 
     # set parameters for data generators
     data_gen_pars = {
         "batch_size": settings_dict["batch_size"],
         "max_encoder_seq_length": max_encoder_seq_length,
         "max_decoder_seq_length": max_decoder_seq_length,
+        "max_seq_length": max_seq_length,
         "num_encoder_tokens": num_encoder_tokens,
         "num_decoder_tokens": num_decoder_tokens,
+        "num_tokens": num_tokens,
         "input_token_index": input_token_index,
         "target_token_index": target_token_index,
+        "token_index": token_index,
         "num_thinking_steps": settings_dict["thinking_steps"],
     }
 
     return data_gen_pars, input_texts, target_texts
+
+
+def concatenate_texts(path, pattern):
+    """Globs math module text files according to pattern.
+
+    Args:
+        path: pathlib Path to text files.
+        pattern: pattern to glob on.
+
+    Returns:
+        input_texts: list of questions.
+        target_texts: list of answers.
+    """
+
+    file_paths = list(path.glob("{}*.txt".format(pattern)))
+
+    input_texts = []
+    target_texts = []
+
+    for file_path in file_paths:
+        with open(str(file_path), "r", encoding="utf-8") as f:
+            lines = f.read().split("\n")[:-1]
+
+        input_texts.extend(lines[0::2])
+        target_texts.extend(["\t" + target_text + "\n" for target_text in lines[1::2]])
+
+    return input_texts, target_texts
