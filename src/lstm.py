@@ -117,7 +117,7 @@ class SimpleLSTM:
         return decoded_sentence
 
 
-class LSTM_S2S:
+class Seq2SeqLSTM:
     def __init__(self, num_encoder_tokens, num_decoder_tokens, latent_dim):
         self.num_encoder_tokens = num_encoder_tokens
         self.num_decoder_tokens = num_decoder_tokens

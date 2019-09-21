@@ -16,6 +16,7 @@ class DataGenerator(tf.keras.utils.Sequence):
         target_token_index,
         num_thinking_steps,
         shuffle=True,
+        **kwargs
     ):
 
         self.batch_size = batch_size

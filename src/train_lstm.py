@@ -12,8 +12,8 @@ import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
 
 from callbacks import GradientLogger, NValidationSetsCallback
-from generator import DataGenerator
-from lstm import LSTM_S2S
+from generators import DataGenerator
+from lstm import Seq2SeqLSTM
 from metrics import exact_match_metric
 from utils import get_sequence_data
 import logging
@@ -73,10 +73,10 @@ def main(settings):
     history = NValidationSetsCallback(valid_dict)
     gradient = GradientLogger(live_metrics=["loss", "exact_match_metric"], live_gaps=10)
 
-    lstm = LSTM_S2S(
+    lstm = Seq2SeqLSTM(
         data_gen_pars["num_encoder_tokens"],
         data_gen_pars["num_decoder_tokens"],
-        settings_dict["latent_dim"],
+        settings_dict["embedding_dim"],
     )
 
     model = lstm.get_model()
