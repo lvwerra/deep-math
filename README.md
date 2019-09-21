@@ -62,3 +62,9 @@ To concatenate all files from one module run:
 ```
 find . \( -path "./train*" -a -name "*arithmetic*" \) -exec cat "{}" \; > concat/train.csv
 ```
+
+## Cleanup
+* Merge all branches
+* Show some results in readme
+* Setup clean notebooks
+* refactor src
