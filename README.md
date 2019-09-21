@@ -55,3 +55,10 @@ make gradient_job
 ```
 
 which can be configured via `settings.json` and the global variables in the `Makefile`.
+
+## Useful commands
+
+To concatenate all files from one module run:
+```
+find . \( -path "./train*" -a -name "*arithmetic*" \) -exec cat "{}" \; > concat/train.csv
+```
