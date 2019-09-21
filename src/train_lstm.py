@@ -5,12 +5,9 @@ import multiprocessing
 import os
 import pickle
 from pathlib import Path
-
 import click
-import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
-
 from callbacks import GradientLogger, NValidationSetsCallback
 from generators import DataGenerator
 from lstm import Seq2SeqLSTM
@@ -115,51 +112,6 @@ def main(settings):
         callbacks=[history, gradient, checkpoint_callback],
         verbose=0,
     )
-
-    # create and save plot of losses
-    plt.figure()
-    plt.plot(train_hist.history["loss"], color="C0", label="train")
-    plt.plot(
-        train_hist.history["validation_loss"], color="C0", label="valid", linestyle="--"
-    )
-    plt.plot(train_hist.history["extrapolation_loss"], color="C1", label="extra")
-    plt.plot(train_hist.history["interpolation_loss"], color="C2", label="inter")
-
-    plt.xlabel("epochs")
-    plt.ylabel("loss")
-    plt.legend(loc="best")
-    plt.ylim([0, 1])
-    plt.grid(True, linestyle="--")
-    plt.tight_layout()
-    plt.savefig(settings_dict["save_path"] + "losses.png", dpi=300)
-
-    # create and save plot of evaluation metrics
-    plt.figure()
-    plt.plot(train_hist.history["exact_match_metric"], color="C0", label="train")
-    plt.plot(
-        train_hist.history["validation_exact_match_metric"],
-        color="C0",
-        label="valid",
-        linestyle="--",
-    )
-    plt.plot(
-        train_hist.history["extrapolation_exact_match_metric"],
-        color="C1",
-        label="extra",
-    )
-    plt.plot(
-        train_hist.history["interpolation_exact_match_metric"],
-        color="C2",
-        label="inter",
-    )
-
-    plt.xlabel("epochs")
-    plt.ylabel("exact match metric")
-    plt.legend(loc="best")
-    plt.ylim([0, 1])
-    plt.grid(True, linestyle="--")
-    plt.tight_layout()
-    plt.savefig(settings_dict["save_path"] + "metrics.png", dpi=300)
 
     # save callbacks data
     with open(settings_dict["save_path"] + "callbacks.pkl", "wb") as file:
