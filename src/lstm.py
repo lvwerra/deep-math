@@ -15,7 +15,7 @@ from tensorflow.keras.layers import (
 from tensorflow.keras.models import Model
 
 
-class LSTMSimple:
+class SimpleLSTM:
     def __init__(self, num_tokens, latent_dim):
         self.num_tokens = num_tokens
         self.latent_dim = latent_dim
@@ -157,7 +157,7 @@ class LSTM_S2S:
         return Model([self.encoder_inputs, self.decoder_inputs], decoder_outputs)
 
 
-class LSTMWithAttention:
+class AttentionLSTM:
     def __init__(
         self,
         num_encoder_tokens,
