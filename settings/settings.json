@@ -1,10 +1,11 @@
 {
-    "math_module": "arithmetic__",
+    "math_module": "arithmetic",
     "train_level": "*",
-    "batch_size": 1024,
-    "thinking_steps": 0,
+    "batch_size": 512,
+    "thinking_steps": 16,
     "epochs": 1,
-    "latent_dim": 256,
+    "num_encoder_units": 512,
+    "num_decoder_units": 2048,
     "embedding_dim": 256,
     "save_path": "/artifacts/",
     "data_path": "/storage/git/deep-math/data/"
