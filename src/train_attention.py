@@ -11,10 +11,10 @@ import click
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
-from attention import LSTMWithAttention
+from lstm import AttentionLSTM
 from callbacks import GradientLogger, NValidationSetsCallback
-from generator import DataGeneratorAttention
-from metrics import exact_match_metric_index
+from generators import DataGeneratorAttention
+from metrics import exact_match_metric
 from utils import get_sequence_data
 
 
@@ -70,11 +70,9 @@ def main(settings):
     }
 
     history = NValidationSetsCallback(valid_dict)
-    gradient = GradientLogger(
-        live_metrics=["loss", "exact_match_metric_index"], live_gaps=10
-    )
+    gradient = GradientLogger(live_metrics=["loss", "exact_match_metric"], live_gaps=10)
 
-    lstm = LSTMWithAttention(
+    lstm = AttentionLSTM(
         data_gen_pars["num_encoder_tokens"],
         data_gen_pars["num_decoder_tokens"],
         data_gen_pars["max_encoder_seq_length"],
@@ -98,9 +96,7 @@ def main(settings):
     )
 
     model.compile(
-        optimizer=adam,
-        loss="categorical_crossentropy",
-        metrics=[exact_match_metric_index],
+        optimizer=adam, loss="categorical_crossentropy", metrics=[exact_match_metric]
     )
 
     # directory where the checkpoints will be saved
@@ -142,20 +138,20 @@ def main(settings):
 
     # create and save plot of evaluation metrics
     plt.figure()
-    plt.plot(train_hist.history["exact_match_metric_index"], color="C0", label="train")
+    plt.plot(train_hist.history["exact_match_metric"], color="C0", label="train")
     plt.plot(
-        train_hist.history["validation_exact_match_metric_index"],
+        train_hist.history["validation_exact_match_metric"],
         color="C0",
         label="valid",
         linestyle="--",
     )
     plt.plot(
-        train_hist.history["extrapolation_exact_match_metric_index"],
+        train_hist.history["extrapolation_exact_match_metric"],
         color="C1",
         label="extra",
     )
     plt.plot(
-        train_hist.history["interpolation_exact_match_metric_index"],
+        train_hist.history["interpolation_exact_match_metric"],
         color="C2",
         label="inter",
     )
