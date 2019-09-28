@@ -31,7 +31,7 @@ def main(settings):
     )
 
     # define file paths
-    raw_path = Path(settings_dict["data_path"] + "raw/v1.0/")
+    raw_path = Path(settings_dict["data_path"] + "raw/mathematics_dataset-v1.0/")
     interpolate_path = raw_path / "interpolate"
     extrapolate_path = raw_path / "extrapolate"
     output_path = Path(settings_dict["data_path"] + "processed/")
