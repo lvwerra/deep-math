@@ -19,7 +19,6 @@ class EvaluateSimpleLSTM:
         self.num_tokens = len(self.token_index)
         
         adam = Adam(lr=6e-4, beta_1=0.9, beta_2=0.995, epsilon=1e-9, decay=0.0, amsgrad=False, clipnorm=0.1)
-        print('params', self.num_tokens, self.settings_dict['latent_dim'])
         self.lstm = SimpleLSTM(self.num_tokens, self.settings_dict['latent_dim'])
         _ = self.lstm.get_model()
         self.lstm.model.load_weights(str(path/'model.h5'))
