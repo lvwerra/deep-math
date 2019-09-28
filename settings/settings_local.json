@@ -1,5 +1,5 @@
 {
-    "math_module": "arithmetic__add_sub",
+    "math_module": "arithmetic",
     "train_level": "*",
     "batch_size": 1024,
     "thinking_steps": 16,
@@ -7,6 +7,6 @@
     "num_encoder_units": 512,
     "num_decoder_units": 2048,
     "embedding_dim": 2048,
-    "save_path": "../data/",
-    "data_path": "../data/"
+    "save_path": "data/",
+    "data_path": "data/"
 }
