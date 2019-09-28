@@ -115,3 +115,5 @@ data/**/
 deep-math.zip
 
 \.idea/
+
+src/models/
