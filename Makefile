@@ -35,9 +35,9 @@ sequence_data:
 
 download_models:
 	mkdir -p src/models/
-	cd src/models/; wget https://github.com/lvwerra/deep-math/releases/download/v0.1/models.zip
-	cd src/models/; unzip models.zip
-	cd src/models; rm models.zip
+	cd src/; wget https://github.com/lvwerra/deep-math/releases/download/v0.1/models.zip
+	cd src/; unzip models.zip
+	cd src/; rm models.zip
 
 #################################################################################
 # Self Documenting Commands                                                     #
