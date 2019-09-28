@@ -32,6 +32,13 @@ dataset:
 sequence_data:
 	python src/sequences.py --settings $(SETTINGS_FILE)
 
+
+download_models:
+	mkdir -p src/models/
+	cd src/models/; wget https://github.com/lvwerra/deep-math/releases/download/v0.1/models.zip
+	cd src/models/; unzip models.zip
+	cd src/models; rm models.zip
+
 #################################################################################
 # Self Documenting Commands                                                     #
 #################################################################################
