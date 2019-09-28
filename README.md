@@ -64,7 +64,9 @@ find . \( -path "./train*" -a -name "*arithmetic*" \) -exec cat "{}" \; > concat
 ```
 
 ## Cleanup
-* Merge all branches
-* Show some results in readme
-* Setup clean notebooks
-* refactor src
+* Show some results in readme [BOTH]
+* Move evaluation helper functions to src [LVW]
+* Flesh out training and evaluation notebooks [LTU: attention, simple train, LVW: evaluation]
+* Add getting started details to README [LTU]
+* Sort out the data path business in settings [LTU]
+* Generalise plots to have three-way comaprison [LVW]
