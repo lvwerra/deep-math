@@ -5,6 +5,7 @@ from sklearn.model_selection import train_test_split
 from pathlib import Path
 import subprocess
 import logging
+import json
 
 
 def get_sequence_data(settings_dict):
@@ -117,3 +118,51 @@ def concatenate_texts(path, pattern):
         target_texts.extend(["\t" + target_text + "\n" for target_text in lines[1::2]])
 
     return input_texts, target_texts
+
+
+def concatenate_texts_individual(path, pattern):
+    file_paths = list(path.glob('{}*.txt'.format(pattern)))
+    
+    input_texts = {}
+    target_texts = {}
+
+    for file_path in file_paths:
+        if file_path.stem not in input_texts:
+            input_texts[file_path.stem] = []
+            target_texts[file_path.stem] = []
+        
+        with open(str(file_path), 'r', encoding='utf-8') as f:
+            lines = f.read().split('\n')[:-1]
+
+        input_texts[file_path.stem].extend(lines[0::2])
+        target_texts[file_path.stem].extend(['\t' + target_text + '\n' for target_text in lines[1::2]])
+        
+    return input_texts, target_texts
+
+
+def get_data(settings_path):
+    with open(str(settings_path), 'r') as file:
+        settings_dict = json.load(file)
+
+    raw_path = Path(settings_dict['data_path'])/'raw/mathematics_dataset-v1.0/'
+    interpolate_path = raw_path/'interpolate'
+    extrapolate_path = raw_path/'extrapolate'
+    train_easy_path = raw_path/'train-easy/'
+    
+    
+    math_module = settings_dict["math_module"]
+    train_level = settings_dict["train_level"]
+
+    datasets = {
+        'train':(raw_path, 'train-' + train_level + '/' + math_module),
+        'interpolate':(interpolate_path, math_module),
+        'extrapolate':(extrapolate_path, math_module)
+               }
+
+    input_texts = {}
+    target_texts = {}
+
+    for k, v in datasets.items():
+        input_texts[k], target_texts[k] = concatenate_texts_individual(v[0], v[1])
+    
+    return settings_dict, input_texts, target_texts

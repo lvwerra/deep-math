@@ -51,7 +51,7 @@ def plot_two_results(result_1, result_2=None, experiments=[''], title=''):
 
     autolabel(rects1)
     fig.tight_layout()
-    plt.ylim([0, 1.1])
+    plt.ylim([0, 1.2])
     plt.legend(loc='upper left')
     plt.show()
 
@@ -64,6 +64,6 @@ def evaluate_on_dataset(lstm_eval, input_texts, target_texts, exp_names, ref_res
             print(test_set, module)
             print('metric:', metric, '\n')
         results[module] = metric
-    plot_two_results(ref_results, results, experiments=exp_names, title='interpolation')
+    plot_two_results(ref_results, results, experiments=exp_names, title=test_set)
 
     return results, ref_results

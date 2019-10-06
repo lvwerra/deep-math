@@ -143,10 +143,7 @@ class EvaluateLSTMWithAttention:
         with open(str(path / 'settings.json'), 'r') as file:
             self.settings_dict = json.load(file)
 
-        with open(str(path / 'arithmetic-*.pkl'), 'rb') as file:
-            self.sequence_data = pickle.load(file)
-
-        with open(str(path / 'arithmetic-*.pkl'), 'rb') as file:
+        with open(self.settings_dict['data_path'] + 'processed/arithmetic-*.pkl', 'rb') as file:
             self.sequence_data = pickle.load(file)
             self.token_index = self.sequence_data['input_token_index']
 
@@ -189,7 +186,7 @@ class EvaluateLSTMWithAttention:
                                out_true.strip() == out_preds.strip()]) / len(outputs_true)
 
         else:
-            result = self.model.evaluate_generator(self.data_generator, verbose=1)
+            result = self.model.evaluate_generator(self.data_generator, verbose=0)
             exact_match = result[1]
 
         return exact_match
