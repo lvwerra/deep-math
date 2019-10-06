@@ -2,10 +2,10 @@ import numpy as np
 from pathlib import Path
 import pickle
 import json
-from lstm import SimpleLSTM
+from lstm import SimpleLSTM, AttentionLSTM
 from metrics import exact_match_metric
 from tensorflow.keras.optimizers import Adam
-from generators import DataGeneratorSeq
+from generators import DataGeneratorSeq, DataGeneratorAttention
 
 
 class EvaluateSimpleLSTM:
@@ -134,7 +134,126 @@ class EvaluateSimpleLSTM:
         token_index = dict([(char, i) for i, char in enumerate(tokens)])
         
         return token_index
-        
-        
-        
+
+
+class EvaluateLSTMWithAttention:
+
+    def __init__(self, path):
+
+        with open(str(path / 'settings.json'), 'r') as file:
+            self.settings_dict = json.load(file)
+
+        with open(str(path / 'arithmetic-*.pkl'), 'rb') as file:
+            self.sequence_data = pickle.load(file)
+
+        with open(str(path / 'arithmetic-*.pkl'), 'rb') as file:
+            self.sequence_data = pickle.load(file)
+            self.token_index = self.sequence_data['input_token_index']
+
+        self.num_tokens = len(self.token_index)
+
+        adam = Adam(lr=6e-4, beta_1=0.9, beta_2=0.995, epsilon=1e-9, decay=0.0, amsgrad=False, clipnorm=0.1)
+        self.lstm = AttentionLSTM(self.sequence_data['num_encoder_tokens'],
+                                  self.sequence_data['num_decoder_tokens'],
+                                  self.sequence_data['max_encoder_seq_length'],
+                                  self.sequence_data['max_decoder_seq_length'],
+                                  self.settings_dict['num_encoder_units'],
+                                  self.settings_dict['num_decoder_units'],
+                                  self.settings_dict['embedding_dim'])
+
+        self.model = self.lstm.get_model()
+        self.model.load_weights(str(path / 'model.h5'))
+        self.model.compile(optimizer=adam, loss='categorical_crossentropy', metrics=[exact_match_metric])
+
+    def evaluate_model(self, input_texts, output_texts, teacher_forcing=True, batch_size=128, n_samples=1000):
+        max_seq_length = max([len(txt_in) + len(txt_out) for txt_in, txt_out in zip(input_texts, output_texts)])
+
+        data_gen_pars = {
+            "batch_size": self.settings_dict['batch_size'],
+            "max_encoder_seq_length": self.sequence_data['max_encoder_seq_length'],
+            "max_decoder_seq_length": self.sequence_data['max_decoder_seq_length'],
+            "num_encoder_tokens": self.sequence_data['num_encoder_tokens'],
+            "num_decoder_tokens": self.sequence_data['num_decoder_tokens'],
+            "input_token_index": self.sequence_data['input_token_index'],
+            "target_token_index": self.sequence_data['target_token_index'],
+            "num_thinking_steps": self.settings_dict["thinking_steps"],
+        }
+
+        self.data_generator = DataGeneratorAttention(input_texts=input_texts,
+                                                     target_texts=output_texts,
+                                                     **data_gen_pars)
+
+        if not teacher_forcing:
+            outputs_true, outputs_preds = self.predict_without_teacher(n_samples, max_seq_length)
+            exact_match = len([0 for out_true, out_preds in zip(outputs_true, outputs_preds) if
+                               out_true.strip() == out_preds.strip()]) / len(outputs_true)
+
+        else:
+            result = self.model.evaluate_generator(self.data_generator, verbose=1)
+            exact_match = result[1]
+
+        return exact_match
+
+    def return_prediction(self, input_texts, output_texts, teacher_forcing=False, batch_size=128, n_samples=1000):
+        max_seq_length = max([len(txt_in) + len(txt_out) for txt_in, txt_out in zip(input_texts, output_texts)])
+
+        data_gen_pars = {
+            "batch_size": 1,
+            "max_encoder_seq_length": self.sequence_data['max_encoder_seq_length'],
+            "max_decoder_seq_length": self.sequence_data['max_decoder_seq_length'],
+            "num_encoder_tokens": self.sequence_data['num_encoder_tokens'],
+            "num_decoder_tokens": self.sequence_data['num_decoder_tokens'],
+            "input_token_index": self.sequence_data['input_token_index'],
+            "target_token_index": self.sequence_data['target_token_index'],
+            "num_thinking_steps": self.settings_dict["thinking_steps"],
+        }
+
+        self.data_generator = DataGeneratorAttention(input_texts=input_texts,
+                                                     target_texts=output_texts,
+                                                     **data_gen_pars)
+
+        preds = self.model.predict_generator(self.data_generator, verbose=0)
+
+        return preds
+
+    def predict_on_string(self, text, max_output_length=100):
+
+        max_seq_length = len(text) + max_output_length
+
+        data_gen_pars = {'batch_size': 1,
+                         "max_encoder_seq_length": self.sequence_data['max_encoder_seq_length'],
+                         "max_decoder_seq_length": self.sequence_data['max_decoder_seq_length'],
+                         "num_encoder_tokens": self.sequence_data['num_encoder_tokens'],
+                         "num_decoder_tokens": self.sequence_data['num_decoder_tokens'],
+                         "input_token_index": self.sequence_data['input_token_index'],
+                         "target_token_index": self.sequence_data['target_token_index'],
+                         "num_thinking_steps": self.settings_dict["thinking_steps"]
+                         }
+
+        self.data_generator = DataGeneratorAttention(input_texts=[text],
+                                                     target_texts=['0' * max_output_length],
+                                                     **data_gen_pars)
+
+        outputs_true, outputs_preds = self.predict_without_teacher(1, max_seq_length)
+
+        return outputs_preds[0].strip()
+
+    def predict_without_teacher(self, n_samples, max_seq_length, random=True):
+
+        encoded_texts = []
+        outputs_true = []
+
+        if random:
+            samples = np.random.choice(self.data_generator.indexes, n_samples, replace=False)
+        else:
+            samples = list(range(n_samples))
+        for i in samples:
+            sample = self.data_generator._DataGeneratorAttention__data_generation([i])
+            input_len = len(self.data_generator.input_texts[i])
+            outputs_true.append(self.data_generator.target_texts[i])
+            x = sample[0][0][:input_len + self.settings_dict["thinking_steps"] + 1]
+            encoded_texts.append(np.expand_dims(x, axis=0))
+
+        outputs_preds = self.lstm.decode_sample(encoded_texts, self.token_index, max_seq_length)
+        return outputs_true, outputs_preds
 
