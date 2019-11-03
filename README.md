@@ -7,6 +7,52 @@ Link to paper: [https://openreview.net/pdf?id=H1gR5iR5FX](https://openreview.net
 
 Link to dataset repository: [https://github.com/deepmind/mathematics_dataset](https://github.com/deepmind/mathematics_dataset)
 
+
+## Overview
+We implement two baselines from the paper from scratch, namely the **simple LSTM** and the **attentional LSTM**. Due to limited
+resources we train on the `arithmetic-*` subset for at most 3 epochs. We observe that the results tend towards the 
+published results and are therefore confident we could match the performance at 12 epochs (setting of published results).
+
+### Training
+We built a custom Keras data generator to encode the input and output texts on demand during training to save memory.
+Additionally, we provide a set of `make` commands to download and pre-process the data into the needed form.
+
+We used Paperspace to experiment using `Gradient° Notebooks and finally train the models for longer periods with Gradient°
+Jobs`.
+
+Finally, we evaluate the training performance on the two provided validation sets `interpolation` and `extrapolation` 
+provided with the official dataset. The reported metric is an exact match metric: 1 if every output characters match and
+0 otherwise. This metric is implemented in TensorFlow such that it can be tracked passed to the keras model and is
+tracked during training.
+
+### Simple LSTM
+The simple LSTM consists of a single LSTM cell that is fed with the input sequence and its outputs are used to predict
+the next character. The architecture is laid out in the following figure:
+
+![LSTM](figures/simple-lstm.png "Simple LSTM architecture")
+
+
+### Attentional LSTM
+
+![A-LSTM](figures/attentional-lstm.png "Attentional LSTM architecture")
+
+![A](figures/attention-mechanism.png "Attentional mechanism")
+
+For a detailed explanation of attentional seq2seq models checkout [this awesome blog post](http://jalammar.github.io/visualizing-neural-machine-translation-mechanics-of-seq2seq-models-with-attention/).
+
+### Results
+
+#### Simple LSTM
+
+Investigating the performance of the simple LSTM for all arithmetic sub-tasks reveals that the model
+is still gaining a lot of performance at each epoch. This is true for both the interpolation and the extrapolation set.
+
+Interpolation set          |  Extrapolation set
+:-------------------------:|:-------------------------:
+![](figures/simple-lstm-interp.gif)  |  ![](figures/simple-lstm-extra.gif)
+
+#### Attentional LSTM
+
 ## Getting started
 Clone the repository and create a virtual environment
 
@@ -14,7 +60,7 @@ Clone the repository and create a virtual environment
 virtualenv --python=python3 env
 ```
 
-Spin up the virtual environment and intall the required packages:
+Spin up the virtual environment and install the required packages:
 
 ```bash
 source ./env/bin/activate
@@ -63,10 +109,11 @@ To concatenate all files from one module run:
 find . \( -path "./train*" -a -name "*arithmetic*" \) -exec cat "{}" \; > concat/train.csv
 ```
 
+## Contact
+
 ## Cleanup
 * Show some results in readme [BOTH]
 * Move evaluation helper functions to src [LVW]
 * Flesh out training and evaluation notebooks [LTU: attention, simple train, LVW: evaluation]
 * Add getting started details to README [LTU]
 * Sort out the data path business in settings [LTU]
-* Generalise plots to have three-way comaprison [LVW]
