@@ -17,7 +17,7 @@ published results and are therefore confident we could match the performance at 
 We built a custom Keras data generator to encode the input and output texts on demand during training to save memory.
 Additionally, we provide a set of `make` commands to download and pre-process the data into the needed form.
 
-We used Paperspace to experiment using `Gradient° Notebooks and finally train the models for longer periods with Gradient°
+We used Paperspace to experiment using `Gradient° Notebooks` and finally train the models for longer periods with `Gradient°
 Jobs`.
 
 Finally, we evaluate the training performance on the two provided validation sets `interpolation` and `extrapolation` 
@@ -31,10 +31,15 @@ the next character. The architecture is laid out in the following figure:
 
 ![LSTM](figures/simple-lstm.png "Simple LSTM architecture")
 
-
+We integrated the "thinking steps" and used the same hyperparameters outlined in the paper.
 ### Attentional LSTM
 
+This model is a seq2seq LSTM model therefore follows the encoder/decoder architecture. The whole input is fed through
+encoder and at the end the state is passed to the decoder: 
+
 ![A-LSTM](figures/attentional-lstm.png "Attentional LSTM architecture")
+
+The attention mechanism weights the hidden states passed through the encoder to produce the outputs at each step in the following way:
 
 ![A](figures/attention-mechanism.png "Attentional mechanism")
 
@@ -45,7 +50,7 @@ For a detailed explanation of attentional seq2seq models checkout [this awesome 
 #### Simple LSTM
 
 Investigating the performance of the simple LSTM for all arithmetic sub-tasks reveals that the model
-is still gaining a lot of performance at each epoch. This is true for both the interpolation and the extrapolation set.
+is still gaining a lot of performance at each epoch. This holds for both the interpolation and the extrapolation set.
 
 Interpolation set          |  Extrapolation set
 :-------------------------:|:-------------------------:
