@@ -3,7 +3,7 @@
 #################################################################################
 # GLOBALS                                                                       #
 #################################################################################
-SETTINGS_FILE = "settings.json"
+SETTINGS_FILE = "settings_local.json"
 GRADIENT_JOB = "attention_numbers__round-number-easy"
 GRADIENT_PROJECT = pr1hc80pw
 GRADIENT_MACHINE = GPU+
@@ -13,6 +13,7 @@ GRADIENT_API_KEY := $(shell cat ~/.paperspace/credentials | grep $(GRADIENT_TEAM
 #################################################################################
 # COMMANDS                                                                      #
 #################################################################################
+## Submit Gradient job
 gradient_job:
 	gradient jobs create \
 	--name $(GRADIENT_JOB) \
@@ -23,14 +24,23 @@ gradient_job:
 	--ignoreFiles "raw,processed,env" \
 	--apiKey $(GRADIENT_API_KEY); rm deep-math.zip
 
+## Downloads the synthetic dataset and extracts to data/raw
 dataset:
 	mkdir -p data/raw/
 	cd data/raw/; gsutil cp gs://mathematics-dataset/mathematics_dataset-v1.0.tar.gz .
 	cd data/raw; tar -xvzf mathematics_dataset-v1.0.tar.gz
 	cd data/raw; rm mathematics_dataset-v1.0.tar.gz
 
+## Processes raw question-answer pairs into form needed for training models
 sequence_data:
-	python src/data/sequences.py --settings $(SETTINGS_FILE)
+	python src/sequences.py --settings $(SETTINGS_FILE)
+
+## Downloads pre-trained models from GitHub releases
+download_models:
+	mkdir -p src/models/
+	cd src/; wget https://github.com/lvwerra/deep-math/releases/download/v0.1/models.zip
+	cd src/; unzip models.zip
+	cd src/; rm models.zip
 
 #################################################################################
 # Self Documenting Commands                                                     #

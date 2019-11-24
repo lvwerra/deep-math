@@ -31,7 +31,7 @@ def main(settings):
     )
 
     # define file paths
-    raw_path = Path(settings_dict["data_path"] + "raw/v1.0/")
+    raw_path = Path(settings_dict["data_path"] + "raw/mathematics_dataset-v1.0/")
     interpolate_path = raw_path / "interpolate"
     extrapolate_path = raw_path / "extrapolate"
     output_path = Path(settings_dict["data_path"] + "processed/")
@@ -61,12 +61,22 @@ def main(settings):
     input_characters = set("".join(all_input_texts))
     target_characters = set("".join(all_target_texts))
 
+    total_characters = sorted(list(input_characters | target_characters))
     input_characters = sorted(list(input_characters))
     target_characters = sorted(list(target_characters))
     num_encoder_tokens = len(input_characters)
     num_decoder_tokens = len(target_characters)
+    # calculate number of unique tokens for combined input and output sequences
+    num_tokens = len(total_characters)
     max_encoder_seq_length = max([len(txt) for txt in all_input_texts])
     max_decoder_seq_length = max([len(txt) for txt in all_target_texts])
+    # calculate maximum sequence length for (question, answer) pairs
+    max_seq_length = max(
+        [
+            len(txt_in) + len(txt_out)
+            for txt_in, txt_out in zip(all_input_texts, all_target_texts)
+        ]
+    )
 
     logger.info("Number of unique input tokens: {}".format(num_encoder_tokens))
     logger.info("Number of unique output tokens: {}".format(num_decoder_tokens))
@@ -76,6 +86,7 @@ def main(settings):
     # create a mapping from unique characters to indices
     input_token_index = dict([(char, i) for i, char in enumerate(input_characters)])
     target_token_index = dict([(char, i) for i, char in enumerate(target_characters)])
+    token_index = dict([(char, i) for i, char in enumerate(total_characters)])
 
     sequence_data = {
         "input_token_index": input_token_index,
@@ -84,10 +95,13 @@ def main(settings):
         "target_texts": target_texts,
         "max_encoder_seq_length": max_encoder_seq_length,
         "max_decoder_seq_length": max_decoder_seq_length,
+        "max_seq_length": max_seq_length,
         "num_encoder_tokens": num_encoder_tokens,
         "num_decoder_tokens": num_decoder_tokens,
+        "num_tokens": num_tokens,
         "input_token_index": input_token_index,
         "target_token_index": target_token_index,
+        "token_index": token_index,
         "num_thinking_steps": settings_dict["thinking_steps"],
     }
 

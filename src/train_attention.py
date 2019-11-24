@@ -1,27 +1,26 @@
 #!/usr/bin/env python
 # coding: utf-8
 import json
+import logging
 import multiprocessing
 import os
 import pickle
 from pathlib import Path
-
+import absl.logging
 import click
-import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
-
+from lstm import AttentionLSTM
 from callbacks import GradientLogger, NValidationSetsCallback
-from generator import DataGenerator
-from lstm import LSTM_S2S
+from generators import DataGeneratorAttention
 from metrics import exact_match_metric
 from utils import get_sequence_data
-import logging
 
 
 @click.command()
 @click.option("--settings", default="settings_local.json")
 def main(settings):
+
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
 
@@ -31,11 +30,10 @@ def main(settings):
         settings_dict = json.load(file)
 
     logger.info(
-        "Training seq2seq model on math module << {} >> and difficulty level << {} >>".format(
+        "Training attention-based model on math module << {} >> and difficulty level << {} >>".format(
             settings_dict["math_module"], settings_dict["train_level"]
         )
     )
-
     logger.info("Using TensorFlow version: {}".format(tf.__version__))
     logger.info("GPU Available: {}".format(tf.test.is_gpu_available()))
     cpu_count = multiprocessing.cpu_count()
@@ -43,22 +41,22 @@ def main(settings):
 
     data_gen_pars, input_texts, target_texts = get_sequence_data(settings_dict)
 
-    training_generator = DataGenerator(
+    training_generator = DataGeneratorAttention(
         input_texts=input_texts["train"],
         target_texts=target_texts["train"],
         **data_gen_pars
     )
-    validation_generator = DataGenerator(
+    validation_generator = DataGeneratorAttention(
         input_texts=input_texts["valid"],
         target_texts=target_texts["valid"],
         **data_gen_pars
     )
-    interpolate_generator = DataGenerator(
+    interpolate_generator = DataGeneratorAttention(
         input_texts=input_texts["interpolate"],
         target_texts=target_texts["interpolate"],
         **data_gen_pars
     )
-    extrapolate_generator = DataGenerator(
+    extrapolate_generator = DataGeneratorAttention(
         input_texts=input_texts["extrapolate"],
         target_texts=target_texts["extrapolate"],
         **data_gen_pars
@@ -73,10 +71,14 @@ def main(settings):
     history = NValidationSetsCallback(valid_dict)
     gradient = GradientLogger(live_metrics=["loss", "exact_match_metric"], live_gaps=10)
 
-    lstm = LSTM_S2S(
+    lstm = AttentionLSTM(
         data_gen_pars["num_encoder_tokens"],
         data_gen_pars["num_decoder_tokens"],
-        settings_dict["latent_dim"],
+        data_gen_pars["max_encoder_seq_length"],
+        data_gen_pars["max_decoder_seq_length"],
+        settings_dict["num_encoder_units"],
+        settings_dict["num_decoder_units"],
+        settings_dict["embedding_dim"],
     )
 
     model = lstm.get_model()
@@ -106,7 +108,7 @@ def main(settings):
     )
 
     logger.info("Start training ...")
-    # workers = cpu_count / 2 and no multiprocessing?
+    # workers = cpu_count // 2 and no multiprocessing?
     train_hist = model.fit_generator(
         training_generator,
         epochs=settings_dict["epochs"],
@@ -115,51 +117,6 @@ def main(settings):
         callbacks=[history, gradient, checkpoint_callback],
         verbose=0,
     )
-
-    # create and save plot of losses
-    plt.figure()
-    plt.plot(train_hist.history["loss"], color="C0", label="train")
-    plt.plot(
-        train_hist.history["validation_loss"], color="C0", label="valid", linestyle="--"
-    )
-    plt.plot(train_hist.history["extrapolation_loss"], color="C1", label="extra")
-    plt.plot(train_hist.history["interpolation_loss"], color="C2", label="inter")
-
-    plt.xlabel("epochs")
-    plt.ylabel("loss")
-    plt.legend(loc="best")
-    plt.ylim([0, 1])
-    plt.grid(True, linestyle="--")
-    plt.tight_layout()
-    plt.savefig(settings_dict["save_path"] + "losses.png", dpi=300)
-
-    # create and save plot of evaluation metrics
-    plt.figure()
-    plt.plot(train_hist.history["exact_match_metric"], color="C0", label="train")
-    plt.plot(
-        train_hist.history["validation_exact_match_metric"],
-        color="C0",
-        label="valid",
-        linestyle="--",
-    )
-    plt.plot(
-        train_hist.history["extrapolation_exact_match_metric"],
-        color="C1",
-        label="extra",
-    )
-    plt.plot(
-        train_hist.history["interpolation_exact_match_metric"],
-        color="C2",
-        label="inter",
-    )
-
-    plt.xlabel("epochs")
-    plt.ylabel("exact match metric")
-    plt.legend(loc="best")
-    plt.ylim([0, 1])
-    plt.grid(True, linestyle="--")
-    plt.tight_layout()
-    plt.savefig(settings_dict["save_path"] + "metrics.png", dpi=300)
 
     # save callbacks data
     with open(settings_dict["save_path"] + "callbacks.pkl", "wb") as file:
@@ -174,4 +131,8 @@ def main(settings):
 
 
 if __name__ == "__main__":
+    log_fmt = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    # workaround for abseil issue https://github.com/tensorflow/tensorflow/issues/26691
+    absl.logging.get_absl_handler().setFormatter(log_fmt)
+
     main()
